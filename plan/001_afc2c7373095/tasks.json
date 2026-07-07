@@ -1,0 +1,250 @@
+{
+  "backlog": [
+    {
+      "type": "Phase",
+      "id": "P1",
+      "title": "tmux-zoxide-sessions v1.0 — Greenfield MVP",
+      "status": "Ready",
+      "description": "Ship the complete plugin from the PRD verbatim spec: (1) the shared frecency resolver library (zoxide / rupa-z / auto), (2) the manual window-jump key binding, (3) the automatic session-created auto-relocate hook, plus full configuration (8 tmux options), README, and LICENSE. The plugin must pass the PRD §7 10-case verification matrix and satisfy §9 acceptance criteria on tmux 3.6b with real zoxide, a zoxide shim, and rupa/z. Architecture findings and two validated corrections live in plan/001_afc2c7373095/architecture/findings_and_risks.md — implementing agents MUST apply Correction A (rupa/z false-positive fix) and Correction B (resolve() exit-0 hardening).",
+      "milestones": [
+        {
+          "type": "Milestone",
+          "id": "P1.M1",
+          "title": "Foundation — resolver library & repo scaffolding",
+          "status": "Planned",
+          "description": "Establish the file tree, LICENSE, and the shared scripts/lib/resolve.sh library (get_tmux_option + the three resolver backends + the resolve() dispatcher). This library is sourced by the run file and both feature scripts, so it is the hard prerequisite for every later milestone. Apply Corrections A & B here.",
+          "tasks": [
+            {
+              "type": "Task",
+              "id": "P1.M1.T1",
+              "title": "Repo scaffolding & LICENSE",
+              "status": "Planned",
+              "description": "Create the directory structure (scripts/, scripts/lib/) and the MIT LICENSE at the repo root. No source files in this task — later tasks create them.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T1.S1",
+                  "title": "Create file tree + LICENSE",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": [],
+                  "prd_selectors": ["h2.0", "h2.5", "h2.5/h3.6", "h2.5/h3.12"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: Repo is greenfield (only PRD.md + empty docs/ exist). The file tree is defined in PRD §5.1; LICENSE text is given verbatim in PRD §5.7 (MIT, 'Copyright (c) 2026 Dustin Schultz'). CWD is the plugin root.\n2. INPUT: None — first subtask in the project.\n3. LOGIC: Create directories scripts/ and scripts/lib/ (empty for now). Create LICENSE at the repo root with the EXACT MIT text from PRD §5.7. Do NOT create any .sh or .tmux files here (later subtasks own them). Do NOT modify .gitignore (forbidden) or PRD.md (read-only).\n4. OUTPUT: scripts/ and scripts/lib/ directories exist; LICENSE exists at repo root with verbatim MIT content. Consumed by P1.M1.T2.S1 (writes into scripts/lib/).\n5. MOCKING: None.\n6. DOCS: none — LICENSE is not user-facing config/API surface; README is authored wholesale in P1.M4.T1."
+                }
+              ]
+            },
+            {
+              "type": "Task",
+              "id": "P1.M1.T2",
+              "title": "Shared resolver library scripts/lib/resolve.sh",
+              "status": "Planned",
+              "description": "Build the sourced POSIX-sh library that both features share: get_tmux_option(), the zoxide and rupa/z backends, and the resolve() dispatcher. This is the dependency root for all feature work. Two validated corrections (A: rupa/z no-match false positive; B: resolve() always-exit-0) are applied here.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T2.S1",
+                  "title": "get_tmux_option() helper",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T1.S1"],
+                  "prd_selectors": ["h2.4", "h2.5", "h2.5/h3.8"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: get_tmux_option is the universal tmux-plugins idiom (see architecture/research_plugin_ecosystem.md §2 — found byte-identical in TPM, tmux-resurrect, tmux-continuum). `tmux show-option -gqv <name>` returns empty + exit 0 for an unset @-option, so the default-arg pattern is correct. resolve.sh is POSIX sh: use `_v=$(...)`, NOT the non-POSIX `local` keyword.\n2. INPUT: scripts/lib/ directory exists (from P1.M1.T1.S1). PRD §5.3 gives the verbatim function.\n3. LOGIC: Create scripts/lib/resolve.sh with `#!/bin/sh` shebang + the header comment from PRD §5.3, and define get_tmux_option() exactly as in PRD §5.3 (POSIX form: `_v=$(tmux show-option -gqv \"$1\" 2>/dev/null); [ -n \"$_v\" ] && echo \"$_v\" || echo \"$2\"`). This is the FIRST function in resolve.sh; subsequent subtasks (S2/S3/S4) append to this same file.\n4. OUTPUT: scripts/lib/resolve.sh exists and is sourceable; get_tmux_option <name> <default> echoes the option value or the default. Consumed by S2/S3/S4 and by the run file (P1.M2.T2.S1).\n5. MOCKING: Unit-test by placing a fake `tmux` earlier on PATH that prints canned `show-option -gqv` output; assert the default is returned when the option is unset/empty.\n6. DOCS: none — internal helper, no user-facing/config surface."
+                },
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T2.S2",
+                  "title": "_resolve_zoxide() backend",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T2.S1"],
+                  "prd_selectors": ["h2.1/h3.0", "h2.4", "h2.5", "h2.5/h3.8"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE (empirically verified, architecture/findings_and_risks.md): `zoxide query <q>` prints exactly one absolute path line on a match and EMPTY stdout + exit 0 on a no-match (no stderr noise). So callers must check output, not status. Gate on `command -v zoxide`; redirect stderr `2>/dev/null` as hygiene.\n2. INPUT: resolve.sh with get_tmux_option() present (from P1.M1.T2.S1).\n3. LOGIC: Append `_resolve_zoxide()` to scripts/lib/resolve.sh per PRD §5.3: `command -v zoxide >/dev/null 2>&1 && zoxide query -- \"$1\" 2>/dev/null`. (Use the `--` end-of-options guard from NOTE D in findings_and_risks.md — cheap hardening against a query that looks like a flag.) TDD: failing test for missing-binary (empty, no error) and match/no-match output, then implement.\n4. OUTPUT: _resolve_zoxide <query> echoes zoxide's best match or empty; never errors if zoxide is absent. Consumed by P1.M1.T2.S4 (resolve dispatcher, auto/zoxide branches).\n5. MOCKING: A fake `zoxide` shim on PATH returning a canned path (match), empty (no-match), or absent from PATH (missing-binary) — assert each.\n6. DOCS: none — internal."
+                },
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T2.S3",
+                  "title": "_resolve_z() backend (rupa/z) — APPLY CORRECTION A",
+                  "status": "Planned",
+                  "story_points": 2,
+                  "dependencies": ["P1.M1.T2.S1"],
+                  "prd_selectors": ["h2.4", "h2.5", "h2.5/h3.8"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE — 🔴 APPLY CORRECTION A (architecture/findings_and_risks.md §A; full corrected code is given there). The PRD §5.3 form `\"$shell\" -c '. \"$1\"; _z \"$2\" >/dev/null 2>&1; pwd'` has a CONFIRMED BUG: rupa/z's `_z` silently `cd`s on a match but leaves cwd UNCHANGED on a no-match, so `pwd` returns the subshell's STARTING directory — a false-positive non-empty path. Empirically reproduced on this machine (no-match returned the plugin's own dir). This is dormant by default (@zoxide-sessions-z-sh unset) but breaks the `z` and `auto`-fallback paths when a user points at a real z.sh.\n2. INPUT: resolve.sh with get_tmux_option() present (from P1.M1.T2.S1).\n3. LOGIC: Append `_resolve_z()` using the VALIDATED before/after pwd-delta form from findings_and_risks.md §A (emit a path ONLY when `_z` actually changed cwd; source z.sh under zsh if available else sh; read @zoxide-sessions-z-sh; short-circuit `return 0` if unset/unreadable; always exit 0). TDD discipline: FIRST write a failing test that demonstrates the false positive (no-match query -> non-empty output), THEN implement the fix so no-match -> empty.\n4. OUTPUT: _resolve_z <query> returns a path only on a real _z match, empty otherwise; always exit 0. Consumed by P1.M1.T2.S4 (resolve dispatcher, auto/z branches).\n5. MOCKING: rupa/z is installed at /home/dustin/.config/znap/rupa/z/z.sh with a populated ~/.z — use it directly, or a temp HOME with a scratch ~/.z + a minimal z.sh fixture. Assert both a known match and a guaranteed no-match (empty output).\n6. DOCS: none — internal. (The README 'Backends' section, authored in P1.M4.T1, already describes the resolver as returning empty on no-match — Correction A makes that statement TRUE.)"
+                },
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T2.S4",
+                  "title": "resolve() dispatcher — APPLY CORRECTION B",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T2.S2", "P1.M1.T2.S3"],
+                  "prd_selectors": ["h2.4", "h2.5", "h2.5/h3.8"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE — 🟡 APPLY CORRECTION B (architecture/findings_and_risks.md §B). The PRD §5.3 comment states resolve() 'Always exits 0 — callers must check the output, not the exit status,' but the code does not enforce it for the `zoxide`/`z` branches (the backend call is the last statement, so its status propagates). zoxide's no-match exit code varies by version. End resolve() with an unconditional `return 0` to honor the documented contract.\n2. INPUT: resolve.sh now contains get_tmux_option(), _resolve_zoxide() (S2), _resolve_z() (S3).\n3. LOGIC: Append resolve() per PRD §5.3: read @zoxide-sessions-backend (default `auto`); `case` over zoxide -> _resolve_zoxide, z -> _resolve_z, auto -> try zoxide then fall back to z (capture into `_r`, printf '%s\\n' \"$_r\"). ADD a trailing `return 0` after the case (see findings_and_risks.md §B for exact code). TDD: assert exit status is 0 for every backend on both match and no-match.\n4. OUTPUT: resolve <query> echoes the best-match directory or empty, and ALWAYS exits 0. This is the single resolver entry point consumed by P1.M2.T1.S1 (z-window.sh) and P1.M3.T1.S1 (z-session.sh).\n5. MOCKING: Fake `tmux` (to set @zoxide-sessions-backend) + fake zoxide/z.sh fixtures; assert correct output and exit-0 for all three backends × {match, no-match}.\n6. DOCS: none — internal."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Milestone",
+          "id": "P1.M2",
+          "title": "Window-jump feature (manual)",
+          "status": "Planned",
+          "description": "Implement Feature A: prefix <key> opens a command-prompt; the typed query is resolved to a frecency directory and a new window opens there (named after the dir basename), falling back to the current pane's directory. This milestone delivers z-window.sh and creates the run file with the key binding.",
+          "tasks": [
+            {
+              "type": "Task",
+              "id": "P1.M2.T1",
+              "title": "scripts/z-window.sh handler",
+              "status": "Planned",
+              "description": "The run-shell target of the window-jump binding. Resolves the query via the shared backend and opens a new window in the resolved (or current) directory.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M2.T1.S1",
+                  "title": "Implement z-window.sh",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T2.S4"],
+                  "prd_selectors": ["h2.3/h3.4", "h2.4", "h2.5", "h2.5/h3.9", "h2.5/h3.6"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE (architecture/findings_and_risks.md §✅6): command-prompt `%%` substitution is textual and splits on spaces, BUT this script uses `query=\"$*\"` which RECOMBINES the args, so spaced queries work correctly. Do not change to \"$1\".\n2. INPUT: resolve() (always-exit-0, from P1.M1.T2.S4) via `. \"$SCRIPT_DIR/lib/resolve.sh\"`.\n3. LOGIC: Create scripts/z-window.sh per PRD §5.4 verbatim. `#!/bin/sh`; `SCRIPT_DIR=$(cd \"$(dirname \"$0\")\" && pwd)`; source resolve.sh; `query=\"$*\"`; read cur = `tmux display-message -p '#{pane_current_path}'` (fallback $HOME) and session = `... '#{session_name}'`; `dir=\"$cur\"`; if query non-empty, `resolved=$(resolve \"$query\")` and use it if non-empty; `base=$(basename \"$dir\")`; `tmux new-window -t \"$session:\" -c \"$dir\" -n \"$base\"`. Make the file executable (chmod +x). TDD: empty query -> window in cur path; match -> window in resolved dir, named basename; no-match -> window in cur path.\n4. OUTPUT: z-window.sh [query...] opens exactly one window in the resolved dir (named basename) or the current pane dir. Consumed by P1.M2.T2.S1 (the binding invokes it).\n5. MOCKING: Drive an ISOLATED tmux server (`tmux -L zxstest ...`) so the user's live tmux is untouched; inject a fake `resolve`/zoxide for deterministic results; assert the new window's cwd via `tmux display-message -t <win> -p '#{pane_current_path}'` and name via '#{window_name}'.\n6. DOCS: [Mode A] The @zoxide-sessions-key and @zoxide-sessions-prompt options this binding reads are documented in README.md's Options table, authored wholesale in P1.M4.T1 — no separate doc update in this subtask; just ensure the defaults ('g', 'z to:') match."
+                }
+              ]
+            },
+            {
+              "type": "Task",
+              "id": "P1.M2.T2",
+              "title": "Window-jump key binding (create run file)",
+              "status": "Planned",
+              "description": "Create tmux-zoxide-sessions.tmux (the TPM run file) with its bash preamble, source resolve.sh, and the window-jump bind-key. The session-hook section is added later in P1.M3.T2.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M2.T2.S1",
+                  "title": "Create run file with window binding",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T2.S1", "P1.M2.T1.S1"],
+                  "prd_selectors": ["h2.3/h3.4", "h2.4", "h2.5", "h2.5/h3.7", "h2.5/h3.6", "h2.6/h3.13"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE (architecture/research_plugin_ecosystem.md §1, external_deps.md §2): TPM executes `<plugin>.tmux` at the repo root ONCE per init/reload, output suppressed, so the run file must be `chmod +x` with a valid shebang and do its work via tmux commands (not stdout). Use `#!/usr/bin/env bash` + `CURRENT_DIR=$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)` (TPM convention).\n2. INPUT: get_tmux_option() from resolve.sh (P1.M1.T2.S1); the absolute path of z-window.sh (P1.M2.T1.S1).\n3. LOGIC: Create tmux-zoxide-sessions.tmux per PRD §5.2 PART 1 ONLY (do NOT add the session-hook block — that is P1.M3.T2.S1). Bash preamble, source resolve.sh, read key=get_tmux_option('@zoxide-sessions-key','g') and prompt=get_tmux_option('@zoxide-sessions-prompt','z to:'), then `tmux bind-key \"$key\" command-prompt -p \"$prompt\" \"run-shell '$CURRENT_DIR/scripts/z-window.sh %%'\"`. Make executable (chmod +x).\n4. OUTPUT: tmux-zoxide-sessions.tmux at repo root, executable, TPM-loadable, registering the window-jump binding. The file is APPENDED (not rewritten) by P1.M3.T2.S1 — keep the window-binding section intact and terminate it cleanly.\n5. MOCKING: Load on an ISOLATED tmux server (`tmux -L zxstest`): source the run file's commands; assert `tmux list-keys | grep` shows `bind-key g`; trigger the prompt path with a query and confirm a window opens (this is also PRD §7 test #8).\n6. DOCS: [Mode A] Window-jump usage + @zoxide-sessions-key/@zoxide-sessions-prompt are documented in README.md (P1.M4.T1)."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Milestone",
+          "id": "P1.M3",
+          "title": "Session auto-relocate feature (automatic)",
+          "status": "Planned",
+          "description": "Implement Feature B: a global session-created hook (backgrounded) that relocates the first pane of any new session that landed in $HOME to the zoxide-resolved dir matching its name. The $HOME guard makes it safe alongside resurrect/continuum/sessionx/sesh. This milestone delivers z-session.sh (the guard chain) and appends the hook wiring to the run file.",
+          "tasks": [
+            {
+              "type": "Task",
+              "id": "P1.M3.T1",
+              "title": "scripts/z-session.sh handler (guard chain)",
+              "status": "Planned",
+              "description": "The session-created handler. Implements the 11-step guard chain from PRD §3.2: master toggle, name, skip-list, locate first pane, read path, normalize+compare against home-dir, resolve, respawn-pane -c -k, optional rename.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M3.T1.S1",
+                  "title": "Implement z-session.sh guard chain",
+                  "status": "Planned",
+                  "story_points": 2,
+                  "dependencies": ["P1.M1.T2.S4"],
+                  "prd_selectors": ["h2.1/h3.1", "h2.3/h3.5", "h2.4", "h2.5", "h2.5/h3.10", "h2.5/h3.6", "h2.6/h3.14"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE (architecture/findings_and_risks.md, external_deps.md §3): session-created fires AFTER the session+first pane exist, so display-message -t <name> -p '#{pane_id}' returns the new session's pane and '#{pane_current_path}' is readable (empirically confirmed). respawn-pane -c <dir> -k sets cwd, kills the old shell, and PRESERVES the window name + geometry (so an external rename-window hook is unaffected). The resurrect/continuum -c linchpin is confirmed from source, so the `path == $HOME` guard is a precise discriminator.\n2. INPUT: get_tmux_option() and resolve() from resolve.sh (P1.M1.T2.S1, P1.M1.T2.S4). The session name arrives as a single $1 (the hook quotes \"#{session_name}\").\n3. LOGIC: Create scripts/z-session.sh per PRD §5.5 verbatim — the full guard chain: (1) master toggle off -> exit; (2) name=$1 empty -> exit; (3) skip-names loop (default 'home main'); (4) pane=display-message -t \"$name\" -p '#{pane_id}'; (5) path=display-message -t \"$pane\" -p '#{pane_current_path}'; (6) home_dir option (default $HOME); (7) _norm() via readlink -f + trailing-slash collapse, compare path vs home -> exit if !=; (8) resolved=$(resolve \"$name\"); (9) respawn-pane -t \"$pane\" -c \"$resolved\" -k; (10) if @zoxide-sessions-window-name==session, rename first window to name. EVERY tmux call guarded `2>/dev/null || exit 0`. Make executable (chmod +x). TDD covers PRD §7 cases 1-4,6,7,9: relocate fires / skip-list / no-match / not-$HOME / master-off / window-name / spaced name.\n4. OUTPUT: z-session.sh <name> relocates ONLY $HOME-landed, resolvable, non-whitelisted sessions; always exits 0. Consumed by P1.M3.T2.S1 (the hook invokes it).\n5. MOCKING: ISOLATED tmux server (`tmux -L zxstest`). Create sessions whose first pane cwd is $HOME (expect relocate) vs /tmp (expect skip); set @zoxide-sessions-skip-names and auto-session=off; use a zoxide shim for deterministic resolve; assert pane cwd post-respawn via display-message -p '#{pane_current_path}'. For spaced-name handling (§7 test 9), temporarily prefix the script with an `echo \"name=[$1]\" >> /tmp/zxs.log` probe as the PRD suggests, then remove it.\n6. DOCS: [Mode A] @zoxide-sessions-auto-session/-home-dir/-skip-names/-window-name are documented in README.md's Options table (P1.M4.T1) — ensure the defaults match."
+                }
+              ]
+            },
+            {
+              "type": "Task",
+              "id": "P1.M3.T2",
+              "title": "session-created hook wiring (append to run file)",
+              "status": "Planned",
+              "description": "Append the session auto-relocate block to tmux-zoxide-sessions.tmux: gate on @zoxide-sessions-auto-session and register the global session-created hook. Keep set-hook -g (reload-idempotent); document the composition tradeoff in README.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M3.T2.S1",
+                  "title": "Append session-created hook to run file",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M2.T2.S1", "P1.M3.T1.S1"],
+                  "prd_selectors": ["h2.3/h3.5", "h2.4", "h2.5", "h2.5/h3.7", "h2.6/h3.13", "h2.6/h3.14"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE — 🟡 NOTE C (architecture/findings_and_risks.md §C): KEEP the PRD's `set-hook -g session-created` (empirically, `set-hook -g` OVERWRITES, which is RELOAD-IDEMPOTENT — the right choice for a plugin TPM re-sources on every reload; `set-hook -ag` would duplicate the hook each reload). The tradeoff: a global session-created hook set in .tmux.conf BEFORE the TPM init line is replaced. This contradicts the literal wording of PRD §6.2 — it is handled as a DOCS item in P1.M4.T1 / P1.M4.T3, NOT by changing the mechanism. Do not switch to -ag.\n2. INPUT: tmux-zoxide-sessions.tmux already exists with the window-binding section (from P1.M2.T2.S1); z-session.sh absolute path (from P1.M3.T1.S1).\n3. LOGIC: APPEND the PRD §5.2 PART 2 block to tmux-zoxide-sessions.tmux (preserve the window-binding section above): read auto_session=get_tmux_option('@zoxide-sessions-auto-session','on'); if [ \"$auto_session\" != 'off' ]; then SESSION_SCRIPT=\"$CURRENT_DIR/scripts/z-session.sh\"; `tmux set-hook -g session-created \"run-shell -b '${SESSION_SCRIPT} \\\"#{session_name}\\\"'\"`; fi. Use the exact quoting from PRD §5.2 (single quotes around the run-shell arg, escaped double quotes around #{session_name}) so spaced names arrive as one $1.\n4. OUTPUT: When loaded, the run file registers the session-created hook iff auto-session != off. Verify: `tmux show-hooks -g session-created` prints `run-shell -b \"/<abs>/z-session.sh \\\"#{session_name}\\\"\"` (PRD §9 / §7 post-registration check).\n5. MOCKING: ISOLATED tmux server (`tmux -L zxstest`): load the run file; assert the hook is registered when auto-session=on and ABSENT when =off; create a session at $HOME and confirm z-session.sh fires (probe log); create a session with a spaced name and confirm $1 is intact (§7 test 9).\n6. DOCS: [Mode A] The hook-composition note (NOTE C) belongs in README.md's 'Scope & compatibility' section (P1.M4.T1) — flag it for that task."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Milestone",
+          "id": "P1.M4",
+          "title": "Documentation, packaging & acceptance",
+          "status": "Planned",
+          "description": "Author the README, set/commit executable bits, run the PRD §7 verification matrix and §9 acceptance criteria, and run the final changeset-level documentation sync.",
+          "tasks": [
+            {
+              "type": "Task",
+              "id": "P1.M4.T1",
+              "title": "README.md",
+              "status": "Planned",
+              "description": "Author the complete README from PRD §5.6: install (TPM + manual), usage (both features), the full 8-option table, backends, scope & compatibility, and known limitations.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M4.T1.S1",
+                  "title": "Author README.md",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T2.S4", "P1.M2.T1.S1", "P1.M3.T1.S1"],
+                  "prd_selectors": ["h2.1", "h2.2", "h2.3", "h2.4", "h2.5", "h2.5/h3.11", "h2.6", "h2.8"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: README is given verbatim in PRD §5.6. Two accuracy touchpoints from the research: (a) per NOTE C (findings_and_risks.md §C), the 'Scope & compatibility' section should reflect that the global session-created hook is reload-safe (set-hook -g) and explain how to combine with a user's own session-created logic (set after TPM init, or manually append); (b) per Correction A, the 'Backends' rupa/z description (resolver returns empty on no-match) is now actually TRUE. Keep the README's content faithful to §5.6.\n2. INPUT: The 8 options and both features' behavior, as implemented in P1.M1/P1.M2/P1.M3.\n3. LOGIC: Create README.md at repo root with the full content from PRD §5.6: title, Why, Install (TPM `set -g @plugin` + manual clone/run-shell/source), Usage (window jump + session auto-relocate), the Options table (all 8 with defaults), Backends (zoxide/z/auto), Scope & compatibility (tmux 3.0+; composes with resurrect/continuum/sessionx/sesh; NOT a session picker), Known limitations (respawn flicker, whitespace skip-names, single home-dir, GNU readlink -f). Apply the NOTE C wording tweak to Scope & compatibility.\n4. OUTPUT: README.md at repo root documenting every option and the $HOME-guard model. Consumed/verified by P1.M4.T2.S1 (acceptance: 'README documents every option') and P1.M4.T3.S1 (final sync).\n5. MOCKING: None.\n6. DOCS: this IS the documentation task (Mode A authoring + the NOTE C touchpoint)."
+                }
+              ]
+            },
+            {
+              "type": "Task",
+              "id": "P1.M4.T2",
+              "title": "Executable bits & acceptance verification",
+              "status": "Planned",
+              "description": "Set and commit executable bits on the run file and scripts, then execute the PRD §7 10-case test matrix and verify the §9 acceptance criteria.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M4.T2.S1",
+                  "title": "chmod +x, commit bits, run §7 matrix, verify §9",
+                  "status": "Planned",
+                  "story_points": 2,
+                  "dependencies": ["P1.M1.T2.S4", "P1.M2.T1.S1", "P1.M2.T2.S1", "P1.M3.T1.S1", "P1.M3.T2.S1"],
+                  "prd_selectors": ["h2.0", "h2.6/h3.15", "h2.7", "h2.9"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE (architecture/external_deps.md §2): the executable bit MUST be committed or it is lost on clone and TPM silently no-ops the run file. Use `git update-index --chmod=+x <file>` (or chmod +x before git add). scripts/lib/resolve.sh is SOURCED, so it needs no +x.\n2. INPUT: All six files exist (LICENSE, resolve.sh, z-window.sh, z-session.sh, tmux-zoxide-sessions.tmux, README.md).\n3. LOGIC: (a) chmod +x tmux-zoxide-sessions.tmux, scripts/z-window.sh, scripts/z-session.sh and commit the bits. (b) Run the PRD §7 test matrix (10 cases) on an ISOLATED tmux server (`tmux -L zxstest`) wherever automatable; record outcomes. (c) Verify §9 acceptance criteria: 6 files at §5.1 paths with executable scripts/run-file; §7 cases pass; `tmux show-hooks -g session-created` shows the correct absolute path + `\\\"#{session_name}\\\"` form (only when auto-session != off); z-window.sh and z-session.sh share lib/resolve.sh with no duplicated resolver; both features work with real zoxide, a zoxide shim, AND rupa/z; README documents every option and the $HOME-guard model.\n4. OUTPUT: Acceptance report — executable bits committed, §7 matrix results recorded, §9 checklist satisfied. Any failure loops back to the owning subtask.\n5. MOCKING: ISOLATED tmux server (`tmux -L zxstest`, never the user's live server); a zoxide shim (deterministic resolve) for cases needing a known match; real zoxide and rupa/z (/home/dustin/.config/znap/rupa/z/z.sh) for the backend-matrix check. Read a pane's cwd per PRD §7: `tmux display-message -t '<session>:1.0' -p '#{pane_current_path}'` (adjust for base-index).\n6. DOCS: none — verification task (Mode B doc reconciliation is P1.M4.T3.S1)."
+                }
+              ]
+            },
+            {
+              "type": "Task",
+              "id": "P1.M4.T3",
+              "title": "Sync changeset-level documentation",
+              "status": "Planned",
+              "description": "Final Mode B documentation sweep: reconcile README.md against the shipped v1.0 behavior so there is no drift, especially around the validated corrections (rupa/z resolver now truly empty-on-no-match; the set-hook -g reload-safe composition story).",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M4.T3.S1",
+                  "title": "Reconcile README with shipped behavior",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M4.T1.S1", "P1.M1.T2.S4", "P1.M2.T1.S1", "P1.M2.T2.S1", "P1.M3.T1.S1", "P1.M3.T2.S1", "P1.M4.T2.S1"],
+                  "prd_selectors": ["h2.5/h3.11", "h2.4", "h2.8", "h2.9", "h2.6"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: This is the SOW §5 MODE B changeset-level doc sweep (runs LAST; depends on every implementing subtask). Its job is to guarantee README.md matches what actually shipped, since the implementing agents applied two validated corrections (A and B) and the NOTE C composition nuance.\n2. INPUT: README.md (P1.M4.T1.S1) + the final shipped code (P1.M1–P1.M3) + the §7/§9 acceptance report (P1.M4.T2.S1).\n3. LOGIC: Cross-check README.md against shipped behavior: all 8 options present with CORRECT defaults (g / 'z to:' / auto / unset / on / $HOME / 'home main' / off); $HOME-guard model and coexistence claims accurate; 'Known limitations' complete (respawn flicker, whitespace skip-names, single home-dir, GNU readlink -f, degenerate restored-$HOME case); 'Backends' rupa/z description consistent with Correction A (empty on no-match); 'Scope & compatibility' reflects NOTE C (reload-safe set-hook -g + how to combine with a user hook). Update README ONLY where drift from shipped code is found; otherwise leave faithful to PRD §5.6.\n4. OUTPUT: README.md is internally consistent with shipped v1.0; no stale/incorrect claims.\n5. MOCKING: None.\n6. DOCS: this IS the Mode B final documentation-sync task."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
