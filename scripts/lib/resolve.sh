@@ -22,3 +22,23 @@ _resolve_z() {
     "$shell" -c '. "$1" 2>/dev/null || exit 0; o=$(pwd); _z "$2" 2>/dev/null; n=$(pwd); [ "$o" != "$n" ] && printf "%s\n" "$n"; exit 0' \
         _ "$z_sh" "$1" 2>/dev/null
 }
+
+# resolve <query> -> best frecency-match directory (empty if no match).
+# Always exits 0 — callers must check the output, not the exit status.
+# Backend selected by @zoxide-sessions-backend (default "auto"):
+#   zoxide -> zoxide only
+#   z      -> rupa/z only
+#   auto   -> zoxide if present, then rupa/z as fallback
+resolve() {
+    backend=$(get_tmux_option "@zoxide-sessions-backend" "auto")
+    case "$backend" in
+        zoxide) _resolve_zoxide "$1" ;;
+        z)      _resolve_z "$1" ;;
+        auto)
+            _r=$(_resolve_zoxide "$1")
+            [ -z "$_r" ] && _r=$(_resolve_z "$1")
+            printf '%s\n' "$_r"
+            ;;
+    esac
+    return 0   # honor the documented contract regardless of backend exit status
+}

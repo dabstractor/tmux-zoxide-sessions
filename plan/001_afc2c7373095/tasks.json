@@ -11,7 +11,7 @@
           "type": "Milestone",
           "id": "P1.M1",
           "title": "Foundation — resolver library & repo scaffolding",
-          "status": "Researching",
+          "status": "Complete",
           "description": "Establish the file tree, LICENSE, and the shared scripts/lib/resolve.sh library (get_tmux_option + the three resolver backends + the resolve() dispatcher). This library is sourced by the run file and both feature scripts, so it is the hard prerequisite for every later milestone. Apply Corrections A & B here.",
           "tasks": [
             {
@@ -42,7 +42,7 @@
               "type": "Task",
               "id": "P1.M1.T2",
               "title": "Shared resolver library scripts/lib/resolve.sh",
-              "status": "Researching",
+              "status": "Complete",
               "description": "Build the sourced POSIX-sh library that both features share: get_tmux_option(), the zoxide and rupa/z backends, and the resolve() dispatcher. This is the dependency root for all feature work. Two validated corrections (A: rupa/z no-match false positive; B: resolve() always-exit-0) are applied here.",
               "subtasks": [
                 {
@@ -98,7 +98,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T2.S4",
                   "title": "resolve() dispatcher — APPLY CORRECTION B",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T2.S2",
@@ -126,14 +126,14 @@
               "type": "Task",
               "id": "P1.M2.T1",
               "title": "scripts/z-window.sh handler",
-              "status": "Planned",
+              "status": "Researching",
               "description": "The run-shell target of the window-jump binding. Resolves the query via the shared backend and opens a new window in the resolved (or current) directory.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M2.T1.S1",
                   "title": "Implement z-window.sh",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T2.S4"
