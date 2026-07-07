@@ -1,0 +1,175 @@
+{
+  "backlog": [
+    {
+      "type": "Phase",
+      "id": "P1",
+      "title": "Bugfix Release v1.0.1 — zoxide flag absorption + single-quote query",
+      "status": "Planned",
+      "description": "Fix two issues found in adversarial QA testing of tmux-zoxide-sessions v1.0: (1) MAJOR — zoxide flag absorption where leading-dash queries (-l/--list) dump the entire frecency database into a corrupted window, caused by a regression that removed the contract-required `--` end-of-options guard; (2) MINOR — single quotes in window-jump queries break resolution due to the binding's single-quoted run-shell argument. Both fixes include defence-in-depth hardening, test fixture improvements, and regression tests.",
+      "milestones": [
+        {
+          "type": "Milestone",
+          "id": "P1.M1",
+          "title": "Issue 1 — zoxide flag absorption fix (Major)",
+          "status": "Planned",
+          "description": "Three-layer fix for the zoxide flag absorption bug: (1) restore the `--` end-of-options guard in _resolve_zoxide, (2) add POSIX-compliant defence-in-depth guards in z-window.sh and z-session.sh that reject multi-line/non-directory resolved values, (3) harden all 6 fake-zoxide test fixtures to model real zoxide's flag parsing and add regression tests for leading-dash queries. The fixture hardening MUST precede the guard restoration because restoring `--` changes the fake zoxide's argv and would break existing tests if fixtures aren't synchronized.",
+          "tasks": [
+            {
+              "type": "Task",
+              "id": "P1.M1.T1",
+              "title": "Synchronize resolver `--` guard with hardened test fixtures",
+              "status": "Planned",
+              "description": "Restore the `--` end-of-options guard in _resolve_zoxide (the root fix for Issue 1) while simultaneously hardening all 6 fake-zoxide test fixtures so they remain compatible. The fixture hardening (S1) must be done BEFORE the guard restoration (S2) because restoring `zoxide query -- \"$1\"` changes the fake zoxide's argv from `query <kw>` to `query -- <kw>`, and every fake must strip `--` or existing proj-match tests silently break.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T1.S1",
+                  "title": "Harden all 6 fake-zoxide test fixtures to strip `--` and model list-mode",
+                  "status": "Planned",
+                  "story_points": 2,
+                  "dependencies": [],
+                  "prd_selectors": ["h2.2", "h3.0", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_issue1_defense.md §D for the exact current state of each fake-zoxide fixture and architecture/findings_and_risks.md §R2 for the list-mode modeling constraint. All 6 fake zoxide binaries share two flaws: (a) a blind `shift` that ignores `--`, and (b) `case \"$1\"` treating every argument (including `-l`/`--list`) as a plain query returning empty — so real zoxide's list-mode flag parsing is never modeled. There are exactly 6 test files with a fake-zoxide fixture: test_resolve_zoxide.sh, test_resolve_dispatcher.sh, test_z_window.sh, test_z_session.sh, test_run_file.sh, test_backend_matrix.sh (subtest B). Files with NO fake-zoxide (test_resolve_z.sh, test_session_hook.sh) are out of scope.\n2. INPUT: No code dependencies. The 6 test files exist at commit 720f1f3 and pass (80/80). The resolver currently calls `zoxide query \"$1\"` (no `--`), so the fakes' blind `shift` works today.\n3. LOGIC: For each of the 6 fake-zoxide fixtures, restructure the argument parsing to model real zoxide's `--` and list-mode behavior:\n   - After `shift` (consuming `query`), check if `$1` is `--`. If yes, consume it (shift) and treat everything after as a POSITIONAL argument (literal query) — NEVER enter list mode after `--`.\n   - If `--` is NOT present, model real zoxide's flag parsing: for `-l` or `--list`, enter list-mode and print a MULTI-LINE dump (e.g. `printf '%s\\n' \"/fake/db/entry1\" \"/fake/db/entry2\" \"/fake/db/entry3\"; exit 0`). This models the bug so regression tests can observe it.\n   - For positional queries (after `--` or non-flag), keep the existing `case` match logic (proj/token -> fixture dir, else empty).\n   - CRITICAL for test_resolve_dispatcher.sh: its fake exits 1 on no-match (to exercise CORRECTION B's `return 0` in resolve()). Keep that exit-1-on-no-match for the `*` arm. Only the `--` stripping and list-mode (`-l`/`--list`) arms are new; list-mode exits 0 (real zoxide exits 0 in list mode).\n   - CRITICAL for test_backend_matrix.sh subtest B: its fake uses an unquoted heredoc (`<<ZOX`) with `$TOKEN`/`$FIX` expansion. Preserve that expansion style.\n   - Template for each hardened fake (adapt per-file token/paths):\n     ```sh\n     #!/bin/sh\n     [ \"$1\" = \"query\" ] || exit 0\n     shift\n     if [ \"$1\" = \"--\" ]; then\n         shift    # -- consumed; everything after is a positional (literal query)\n     else\n         # No --: model flag parsing (list-mode for -l/--list, like real zoxide)\n         case \"$1\" in\n             -l|--list) printf '%s\\n' \"/fake1\" \"/fake2\"; exit 0 ;;\n         esac\n     fi\n     # Positional query resolution\n     case \"$1\" in\n         <token>) printf '%s\\n' \"<fixture-dir>\" ;;   # MATCH\n         *)       printf '' ;;                          # no-match -> empty\n     esac\n     exit 0\n     ```\n   Also delete/rewrite the false comment in each fake that says `no '--' guard: real zoxide/zoxide-shim do not strip it (would break the shim)` — replace with an accurate comment like `# Strip -- (real zoxide honors end-of-options); model list-mode for -l/--list`.\n4. OUTPUT: All 6 fake-zoxide fixtures now (a) strip `--` like real zoxide, (b) model list-mode for `-l`/`--list` when `--` is absent. The existing test suite must STILL PASS 80/80 after this change (because the resolver still calls `zoxide query \"$1\"` without `--`, so the fakes' `--` stripping is a no-op). This is the prerequisite for P1.M1.T1.S2 (guard restoration).\n5. DOCS: none — test fixtures are internal dev artifacts, no user-facing/config/API surface change."
+                },
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T1.S2",
+                  "title": "Restore `--` end-of-options guard in _resolve_zoxide + rewrite false comment",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T1.S1"],
+                  "prd_selectors": ["h2.2", "h3.0", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/system_context.md §4 Layer 1 and architecture/findings_and_risks.md §F1, §F2. The `--` guard was originally added per contract P1.M1.T2.S2/NOTE D, then removed by commit b93e776 on a factually false rationale. Real zoxide enters list mode for `-l`/`--list` without `--` (146+ line dump); with `--`, it treats them as positionals and returns empty.\n2. INPUT: P1.M1.T1.S1 has hardened all 6 fake-zoxide fixtures to strip `--`, so they are compatible with the restored guard. The current resolver calls `zoxide query \"$1\"` (scripts/lib/resolve.sh:19) with a false comment block at lines 12-17.\n3. LOGIC: In scripts/lib/resolve.sh, change line 19 from `zoxide query \"$1\"` to `zoxide query -- \"$1\"`. Delete the entire false comment block (lines 12-17) and replace with an accurate one-line comment, e.g.:\n   ```sh\n   # _resolve_zoxide <query> -> single directory from `zoxide query`, or empty.\n   # The `--` terminates zoxide options so a leading-dash query (e.g. -l, --list)\n   # is treated as a literal search term, not a zoxide flag (list-mode dump).\n   _resolve_zoxide() {\n       command -v zoxide >/dev/null 2>&1 && zoxide query -- \"$1\" 2>/dev/null\n   }\n   ```\n   Do NOT add `|| true`, `; return 0`, or `local`. Keep the exact `&&` chain form. The `return 0` at the end of `resolve()` (CORRECTION B) handles any residual exit-status risk.\n4. OUTPUT: `_resolve_zoxide` now calls `zoxide query -- \"$1\"`. The fake-zoxide fixtures (hardened in S1) strip `--` and work correctly. The full test suite must pass (80/80 + any new assertions from S1's list-mode fixture changes — the existing cases are unchanged because `--` stripping is a no-op for the current resolver's non-`--` form... wait, after THIS change the resolver DOES pass `--`. So the fakes will now receive `query -- <kw>`, strip `--`, and match correctly. Verify: `sh tests/test_resolve_zoxide.sh` prints pass=3 fail=0, `sh tests/test_resolve_dispatcher.sh` prints pass=14 fail=0, etc.)\n5. DOCS: none — internal resolver implementation detail; README's Backends section says 'zoxide runs `zoxide query <query>`' as a high-level description and the `--` is an implementation detail of safe argument passing, not a user-facing surface change."
+                }
+              ]
+            },
+            {
+              "type": "Task",
+              "id": "P1.M1.T2",
+              "title": "Defence-in-depth caller guards (reject multi-line/non-directory resolved values)",
+              "status": "Planned",
+              "description": "Add POSIX-compliant guards to z-window.sh and z-session.sh that reject a resolved value if it contains a newline (multi-line database dump) or is not an existing directory, falling back to the current pane path / no-op. This is belt-and-braces defence so a future resolver regression cannot corrupt a window or pane.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T2.S1",
+                  "title": "Add newline-reject + directory-exists guard to z-window.sh",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T1.S2"],
+                  "prd_selectors": ["h2.2", "h3.0", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_issue1_defense.md §B and architecture/findings_and_risks.md §F4. The PRD's suggested one-liner uses `$'\\n'` (bash-only) and has inverted boolean logic — do NOT copy it. Use the POSIX `case ... in *\"$NL\"*` idiom with a literal newline variable instead.\n2. INPUT: scripts/z-window.sh exists and works for normal queries. The current logic (lines ~27-39):\n   ```sh\n   query=\"$*\"\n   cur=$(tmux display-message -p '#{pane_current_path}' 2>/dev/null)\n   [ -z \"$cur\" ] && cur=\"$HOME\"\n   session=$(tmux display-message -p '#{session_name}' 2>/dev/null)\n   dir=\"$cur\"\n   if [ -n \"$query\" ]; then\n       resolved=$(resolve \"$query\")\n       [ -n \"$resolved\" ] && dir=\"$resolved\"\n   fi\n   base=$(basename \"$dir\")\n   tmux new-window -t \"$session:\" -c \"$dir\" -n \"$base\"\n   ```\n3. LOGIC: Add a POSIX newline literal near the top of the script (after sourcing resolve.sh), then replace the resolve/dir-assignment block with a guard that checks: (1) resolved contains no newline (multi-line dump = reject), (2) resolved is an existing directory (`-d`). If either fails, keep dir=$cur.\n   ```sh\n   # Single newline, POSIX-portable (avoids bash-only $'\\n').\n   NL='\n   '\n   ```\n   Replace the `if [ -n \"$query\" ]` block with:\n   ```sh\n   if [ -n \"$query\" ]; then\n       resolved=$(resolve \"$query\")\n       # Defence in depth: accept `resolved` ONLY if it is a single line that is\n       # an existing directory. A multi-line value (e.g. a zoxide list-mode dump)\n       # or any non-directory falls back to the current pane path.\n       case \"$resolved\" in\n           *\"$NL\"*) : ;;                  # multi-line -> reject, keep dir=$cur\n           *)        [ -d \"$resolved\" ] && dir=\"$resolved\" ;;\n       esac\n   fi\n   ```\n   `base` and `new-window` lines are unchanged — they now always receive a single, existing path.\n4. OUTPUT: z-window.sh now rejects multi-line or non-directory resolved values. Normal matches still work (single-line existing directory). Empty/no-match falls back to $cur (unchanged). `sh tests/test_z_window.sh` must pass.\n5. DOCS: none — internal hardening, no user-facing behavior change for normal queries."
+                },
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T2.S2",
+                  "title": "Add symmetric defence-in-depth guard to z-session.sh",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T1.S2"],
+                  "prd_selectors": ["h2.2", "h3.0", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_issue1_defense.md §C. The z-session.sh attack surface is lower (session names rarely contain leading dashes), but the guard belongs for symmetry and future-proofing — the resolver is shared and backend-pluggable.\n2. INPUT: scripts/z-session.sh exists with the resolve/respawn sequence (lines ~49-55):\n   ```sh\n   resolved=$(resolve \"$name\") || exit 0\n   [ -n \"$resolved\" ] || exit 0\n   tmux respawn-pane -t \"$pane\" -c \"$resolved\" -k 2>/dev/null || exit 0\n   ```\n3. LOGIC: Add the same POSIX newline literal (`NL='\\n'` with a real newline) near the top, then insert a guard between the `[ -n \"$resolved\" ]` check and `respawn-pane`:\n   ```sh\n   # Defence in depth: accept `resolved` ONLY if it is a single existing\n   # directory; otherwise no-op (pane stays where it is).\n   case \"$resolved\" in\n       *\"$NL\"*) exit 0 ;;                 # multi-line dump -> refuse to relocate\n       *)       [ -d \"$resolved\" ] || exit 0 ;;\n   esac\n   ```\n   On failure the handler `exit 0`s (consistent with its existing no-op contract) rather than corrupting the pane.\n4. OUTPUT: z-session.sh now rejects multi-line or non-directory resolved values. Normal relocations still work. `sh tests/test_z_session.sh` must pass.\n5. DOCS: none — internal hardening."
+                }
+              ]
+            },
+            {
+              "type": "Task",
+              "id": "P1.M1.T3",
+              "title": "Leading-dash query regression tests",
+              "status": "Planned",
+              "description": "Add regression test cases that query `-l`/`--list` (and a multi-line-output token) through the resolver, the window handler, and the session handler, proving that (a) the `--` guard makes the resolver return empty for leading-dash queries, and (b) the defence-in-depth guards reject multi-line values and fall back correctly. These tests would have caught the original regression.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T3.S1",
+                  "title": "Add `-l`/`--list` regression cases to unit tests",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T1.S2"],
+                  "prd_selectors": ["h2.2", "h3.0", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_test_baseline.md §4 for the assertion format (`check <desc> <expected> <actual>`) and architecture/research_issue1_defense.md §D1-§D2 for the exact fixture state. The hardened fakes (from P1.M1.T1.S1) model list-mode: `query -l` (no `--`) returns multi-line; `query -- -l` returns empty.\n2. INPUT: P1.M1.T1.S1 hardened the fakes, P1.M1.T1.S2 restored the `--` guard. The resolver now calls `zoxide query -- \"$1\"`.\n3. LOGIC: Add regression assertions to two unit test files:\n   - tests/test_resolve_zoxide.sh: Add a case `check \"leading-dash -l resolves to empty\" \"\" \"$(withfake -l)\"` and `check \"leading-dash --list resolves to empty\" \"\" \"$(withfake --list)\"`. The fake receives `query -- -l`, strips `--`, sees `-l` as positional, no match, returns empty. Also add a case proving the fake models list-mode WITHOUT `--`: directly invoke the fake `$TBIN/zoxide query -l` and assert it returns MULTI-LINE (non-empty, contains a newline) — this documents why the `--` guard is needed.\n   - tests/test_resolve_dispatcher.sh: Add cases `check \"auto: -l resolves empty\" \"\" \"$(rout auto -l)\"` and `check \"exit 0: auto -l\" \"0\" \"$(rexit auto -l)\"`. Also add for zoxide backend. These prove the auto dispatcher doesn't short-circuit on a multi-line dump because the `--` guard makes zoxide return empty.\n4. OUTPUT: test_resolve_zoxide.sh prints pass>=5 fail=0 (was 3); test_resolve_dispatcher.sh prints pass>=17 fail=0 (was 14). Both exit 0.\n5. DOCS: none — test-only change."
+                },
+                {
+                  "type": "Subtask",
+                  "id": "P1.M1.T3.S2",
+                  "title": "Add `-l` and multi-line regression cases to integration tests",
+                  "status": "Planned",
+                  "story_points": 2,
+                  "dependencies": ["P1.M1.T1.S2", "P1.M1.T2.S1", "P1.M1.T2.S2"],
+                  "prd_selectors": ["h2.2", "h3.0", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_test_baseline.md §4 for integration test patterns (isolated tmux -L servers, fake tmux wrapper, fake zoxide, run_case/window_jump/session_relocate helpers). The integration tests drive REAL scripts against a sandboxed server.\n2. INPUT: P1.M1.T1.S1 hardened the fakes (strip `--`, model list-mode). P1.M1.T1.S2 restored the `--` guard. P1.M1.T2.S1 added the defence-in-depth guard to z-window.sh. P1.M1.T2.S2 added it to z-session.sh.\n3. LOGIC: Add regression cases to two integration test files:\n   - tests/test_z_window.sh: Add CASE 5: query `-l` -> window falls back to cur path. Call `run_case -l`, assert: (a) exactly 1 new window, (b) window NAME = basename(cur), (c) START_PATH = cur. The fake receives `query -- -l`, returns empty; resolver returns empty; z-window.sh falls back to $cur. ALSO add CASE 6: query a fake token that returns MULTI-LINE output (e.g. add `multiline)` to the fake's case that prints 3 lines) -> defence-in-depth guard rejects it -> window falls back to cur. Assert NAME and START_PATH = cur. This tests the guard independently of the `--` fix.\n   - tests/test_z_session.sh: Add a case: create a session named `-l` at $FIX/home, run `$ZSESS -l`, assert the pane stays at $FIX/home (no relocate). The fake receives `query -- -l`, returns empty; resolver returns empty; z-session.sh no-ops. Also add a case with a multi-line fake token to verify the session guard rejects multi-line resolved values.\n4. OUTPUT: test_z_window.sh passes with the new cases (pass>=15, was 11). test_z_session.sh passes with the new cases (pass>=12, was 9). Both exit 0. These tests would have FAILED before the fix (the fake would dump multi-line for `-l` without `--`, and the window would be corrupted).\n5. DOCS: none — test-only change."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Milestone",
+          "id": "P1.M2",
+          "title": "Issue 2 — single-quote query breakage fix (Minor)",
+          "status": "Planned",
+          "description": "Fix the binding quoting so that a window-jump query containing a single quote (e.g. a directory like o'brien) is delivered intact to z-window.sh. The root cause is that the `%%` substitution in the command-prompt binding is raw text with no escaping, and wrapping it in single quotes causes a typed `'` to terminate the argument prematurely. The fix wraps `%%` in shell double quotes within the existing single-quoted run-shell argument.",
+          "tasks": [
+            {
+              "type": "Task",
+              "id": "P1.M2.T1",
+              "title": "Fix binding quoting for arbitrary characters and add regression test",
+              "status": "Planned",
+              "description": "Change the run-shell binding in tmux-zoxide-sessions.tmux to wrap `%%` in double quotes so single quotes (and spaces) survive both tmux's lexer and sh -c. Update the test_run_file.sh assertion that checks the binding format. Add an integration regression test proving a single-quote query resolves correctly.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M2.T1.S1",
+                  "title": "Double-quote `%%` in the run-shell binding + update test_run_file.sh C3 assertion",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": [],
+                  "prd_selectors": ["h2.3", "h3.1", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_issue2_quoting.md. tmux `%%` is a raw textual substitution with no escaping. The binding currently wraps `%%` in single quotes: `\"run-shell '$CURRENT_DIR/scripts/z-window.sh %%'\"`. When a user types a query with `'` (e.g. `o'brien`), the apostrophe terminates the single-quoted run-shell argument prematurely. The fix wraps `%%` in double quotes: `\"run-shell '$CURRENT_DIR/scripts/z-window.sh \\\"%%\\\"'\"` (in the bash run file, `\\\"` produces a literal `\"` in the emitted tmux template, so tmux sees `run-shell '.../z-window.sh \"%%\"'`). tmux's outer single quotes pass the inner `\"...\"` through untouched; sh -c then protects `'` and spaces inside double quotes. Trace for `o'brien`: substitute -> `run-shell '.../z-window.sh \"o'brien\"'` -> tmux lex -> shell cmd `.../z-window.sh \"o'brien\"` -> sh -c -> $1=o'brien. For empty query (Enter): `\"\"` -> empty $1 -> matches existing fallback behavior.\n2. INPUT: tmux-zoxide-sessions.tmux line ~18 currently has: `\"run-shell '$CURRENT_DIR/scripts/z-window.sh %%'\"`. test_run_file.sh has assertion C3: `contains \"C3: abs path to z-window.sh + %% kept\" \"$b\" \"run-shell '$REPO_ROOT/scripts/z-window.sh %%'\"`.\n3. LOGIC: In tmux-zoxide-sessions.tmux, change the binding from `\"run-shell '$CURRENT_DIR/scripts/z-window.sh %%'\"` to `\"run-shell '$CURRENT_DIR/scripts/z-window.sh \\\"%%\\\"'\"`. In test_run_file.sh, update C3's needle from `\"run-shell '$REPO_ROOT/scripts/z-window.sh %%'\"` to `\"run-shell '$REPO_ROOT/scripts/z-window.sh \\\"%%\\\"'\"` (or a substring that matches the new form). Verify with `sh tests/test_run_file.sh` that the binding registration test passes.\n4. OUTPUT: The registered tmux binding now wraps `%%` in double quotes. test_run_file.sh passes with updated assertion. The existing test suite must remain green (this change only affects the binding format string, not resolver/handler logic).\n5. DOCS: none — the README's 'Window jump' usage section does not document the exact quoting of the binding. No user-facing/config surface change (the key, prompt, and behavior are identical for normal queries)."
+                },
+                {
+                  "type": "Subtask",
+                  "id": "P1.M2.T1.S2",
+                  "title": "Add single-quote query regression test",
+                  "status": "Planned",
+                  "story_points": 2,
+                  "dependencies": ["P1.M2.T1.S1"],
+                  "prd_selectors": ["h2.3", "h3.1", "h2.4"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_issue2_quoting.md §Verification commands and architecture/research_test_baseline.md §4 for integration test patterns. The regression test must verify that a query containing a single quote is delivered intact to z-window.sh as $1 and resolves correctly.\n2. INPUT: P1.M2.T1.S1 has updated the binding to `run-shell '.../z-window.sh \"%%\"'`. The fake zoxide in test_z_window.sh maps known tokens to fixture dirs.\n3. LOGIC: In tests/test_z_window.sh (or test_run_file.sh), add a regression case that simulates the command-prompt dispatch with a single-quote query. Two approaches:\n   - Approach A (direct invocation): The fake zoxide adds a match for a query containing `'` (e.g. a token like `o'brien` mapped to a real fixture dir `$FIX/obrien`). Then call `$ZWIN \"o'brien\"` (or `$REAL_TMUX run-shell \"$ZWIN \\\"o'brien\\\"\"` to simulate the production dispatch path). Assert the window opens at the resolved dir with the correct name. This tests z-window.sh receives `$1=o'brien` intact.\n   - Approach B (tmux dispatch simulation): Source a tmux config file that reproduces the exact binding dispatch: `printf \"run-shell '%s/scripts/z-window.sh \\\"o'brien\\\"'\\n\" \"$REPO\" > /tmp/qtest.tmux` then `source-file` it on the isolated server. This is the closest to the real production path but more brittle.\n   Use Approach A for reliability. Create `$FIX/obrien` as a real dir, add `o'brien)` to the fake zoxide case returning `$FIX/obrien`, then invoke z-window.sh with `\"o'brien\"` as a single argument. Assert: (a) exactly 1 new window, (b) NAME = obrien, (c) START_PATH = $FIX/obrien.\n4. OUTPUT: A new regression case proves single-quote queries resolve correctly. This test would have FAILED before the fix (query truncated/lost). test_z_window.sh or test_run_file.sh passes with the new case.\n5. DOCS: none — test-only change."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Milestone",
+          "id": "P1.M3",
+          "title": "Documentation sync",
+          "status": "Planned",
+          "description": "Review and update README.md and any overview documentation to reflect the bugfix changes. Per the SOW §5 Mode B, this is the final changeset-level documentation task that sweeps the README for any stale content after all implementing subtasks complete.",
+          "tasks": [
+            {
+              "type": "Task",
+              "id": "P1.M3.T1",
+              "title": "Sync changeset-level documentation",
+              "status": "Planned",
+              "description": "Final documentation sweep: review README.md and update any sections that reference the fixed behavior. The bugfix changes are primarily internal (resolver guard, caller guards, binding quoting), but the README's 'Known limitations' section may warrant review (e.g. noting that leading-dash queries are now handled safely, or that single-quote queries work). This task depends on ALL implementing subtasks.",
+              "subtasks": [
+                {
+                  "type": "Subtask",
+                  "id": "P1.M3.T1.S1",
+                  "title": "Review and update README.md to reflect bugfix changes",
+                  "status": "Planned",
+                  "story_points": 1,
+                  "dependencies": ["P1.M1.T1.S2", "P1.M1.T2.S1", "P1.M1.T2.S2", "P1.M1.T3.S1", "P1.M1.T3.S2", "P1.M2.T1.S1", "P1.M2.T1.S2"],
+                  "prd_selectors": ["h2.0", "h2.4", "h3.0", "h3.1"],
+                  "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/system_context.md §5 for the file change scope. The README at /home/dustin/.config/tmux/plugins/tmux-zoxide-sessions/README.md has sections: Install, Usage (Window jump, Session auto-relocate), Options (table, Backends, Known limitations), Scope & compatibility. The 'Backends' section says 'zoxide runs `zoxide query <query>`' (high-level; the `--` is an implementation detail — verify whether this needs updating). The 'Known limitations' section lists 5 items; none mention leading-dash queries or single-quote queries.\n2. INPUT: All implementing subtasks are complete. The codebase now has: (a) `--` guard in _resolve_zoxide, (b) defence-in-depth guards in z-window.sh and z-session.sh, (c) double-quoted `%%` in the binding.\n3. LOGIC: Review README.md and update ONLY what is stale or now inaccurate:\n   - 'Backends' section: The line 'zoxide runs `zoxide query <query>`' is technically still accurate at a high level (the `--` is safe argument passing, not a user-visible flag). Consider whether to add a note about leading-dash query safety. If the description is still accurate as-is, do NOT change it (avoid doc churn).\n   - 'Known limitations' section: Review whether any of the 5 existing limitations are now resolved or need amendment by these fixes. The fixes are defensive hardening and do not change documented behavior for normal queries. If no limitation is affected, do NOT add or remove anything.\n   - 'Usage / Window jump' section: The fix for Issue 2 (double-quoting `%%`) is transparent to the user — queries with single quotes now work. No usage instruction changes needed.\n   - DECISION: If the README is already accurate after the fixes (likely), make NO changes and document why in the verification notes. Do NOT manufacture documentation churn.\n4. OUTPUT: README.md is either updated (if any section was stale) or confirmed accurate (with a note explaining no changes were needed). The README must not contradict the fixed behavior.\n5. DOCS: [Mode B] This IS the changeset-level documentation sync task. It sweeps README.md for any overview/feature content that spans the whole changeset. Per-file doc updates (Mode A) were handled inline by implementing subtasks (none needed any). If this review finds no stale content, that is a valid outcome — document it."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

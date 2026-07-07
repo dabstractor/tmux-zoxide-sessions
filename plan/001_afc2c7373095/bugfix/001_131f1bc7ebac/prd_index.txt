@@ -1,0 +1,10 @@
+h1.0 Bug Fix Requirements
+ h2.0 Overview
+ h2.1 Critical Issues (Must Fix)
+ h2.2 Major Issues (Should Fix)
+  h3.0 Issue 1: zoxide flag absorption — -l / --list queries dump the entire frecency database into a corrupted window
+ h2.3 Minor Issues (Nice to Fix)
+  h3.1 Issue 2: A single quote in a window-jump query breaks resolution
+ h2.4 Testing Summary
+---
+code:5 para:26 list:3
