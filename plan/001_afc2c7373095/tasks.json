@@ -184,21 +184,21 @@
           "type": "Milestone",
           "id": "P1.M3",
           "title": "Session auto-relocate feature (automatic)",
-          "status": "Planned",
+          "status": "Researching",
           "description": "Implement Feature B: a global session-created hook (backgrounded) that relocates the first pane of any new session that landed in $HOME to the zoxide-resolved dir matching its name. The $HOME guard makes it safe alongside resurrect/continuum/sessionx/sesh. This milestone delivers z-session.sh (the guard chain) and appends the hook wiring to the run file.",
           "tasks": [
             {
               "type": "Task",
               "id": "P1.M3.T1",
               "title": "scripts/z-session.sh handler (guard chain)",
-              "status": "Researching",
+              "status": "Complete",
               "description": "The session-created handler. Implements the 11-step guard chain from PRD §3.2: master toggle, name, skip-list, locate first pane, read path, normalize+compare against home-dir, resolve, respawn-pane -c -k, optional rename.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M3.T1.S1",
                   "title": "Implement z-session.sh guard chain",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 2,
                   "dependencies": [
                     "P1.M1.T2.S4"
@@ -220,14 +220,14 @@
               "type": "Task",
               "id": "P1.M3.T2",
               "title": "session-created hook wiring (append to run file)",
-              "status": "Planned",
+              "status": "Researching",
               "description": "Append the session auto-relocate block to tmux-zoxide-sessions.tmux: gate on @zoxide-sessions-auto-session and register the global session-created hook. Keep set-hook -g (reload-idempotent); document the composition tradeoff in README.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M3.T2.S1",
                   "title": "Append session-created hook to run file",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M2.T2.S1",
