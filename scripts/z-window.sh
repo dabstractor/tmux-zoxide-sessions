@@ -15,6 +15,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/lib/resolve.sh"
 
+# Single newline, POSIX-portable (avoids the bash-only $'\n' form).
+NL='
+'
+
 query="$*"
 
 # Pull the current pane's directory and session from the live tmux server.
@@ -26,7 +30,13 @@ dir="$cur"
 
 if [ -n "$query" ]; then
     resolved=$(resolve "$query")
-    [ -n "$resolved" ] && dir="$resolved"
+    # Defence in depth: accept `resolved` ONLY if it is a single line that is
+    # an existing directory. A multi-line value (e.g. a zoxide list-mode dump)
+    # or any non-directory falls back to the current pane path.
+    case "$resolved" in
+        *"$NL"*) : ;;                  # multi-line -> reject, keep dir=$cur
+        *)        [ -d "$resolved" ] && dir="$resolved" ;;
+    esac
 fi
 
 base=$(basename "$dir")
