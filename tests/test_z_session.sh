@@ -50,8 +50,17 @@ chmod +x "$TBIN/tmux"
 # fake `zoxide`: known names -> real fixture dirs; anything else -> empty (no match, exit 0).
 cat > "$TBIN/zoxide" <<'ZOX'
 #!/bin/sh
+# Fake zoxide: models query [--] <kw> AND list-mode for -l/--list, like real zoxide.
+# Strip -- (real zoxide honors end-of-options); model list-mode for -l/--list.
 [ "$1" = "query" ] || exit 0
-shift        # no '--' guard: real zoxide/zoxide-shim do not strip it (would break the shim)
+shift
+if [ "$1" = "--" ]; then
+    shift      # -- consumed; everything after is a POSITIONAL query (NEVER list-mode after --)
+else
+    case "$1" in
+        -l|--list) printf '%s\n' "$FIX/proj" "$FIX/other1" "$FIX/other2"; exit 0 ;;
+    esac
+fi
 case "$1" in
     proj)        printf '%s\n' "$FIX/proj"; exit 0 ;;     # MATCH (real dir)
     "two words") printf '%s\n' "$FIX/twowords"; exit 0 ;; # MATCH (spaced name; real dir)

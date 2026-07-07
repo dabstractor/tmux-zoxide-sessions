@@ -12,11 +12,18 @@ TBIN="$REPO_ROOT/tests/.zoxide-bin"
 mkdir -p "$TBIN"
 cat > "$TBIN/zoxide" <<'ZOXIDE'
 #!/bin/sh
-# Fake zoxide implementing ONLY: zoxide query [--] <keyword>
+# Fake zoxide: models query [--] <kw> AND list-mode for -l/--list, like real zoxide.
+# Strip -- (real zoxide honors end-of-options); model list-mode for -l/--list.
 [ "$1" = "query" ] || exit 0
 shift
-kw="$1"
-case "$kw" in
+if [ "$1" = "--" ]; then
+    shift      # -- consumed; everything after is a POSITIONAL query (NEVER list-mode after --)
+else
+    case "$1" in
+        -l|--list) printf '%s\n' "/home/user/projects/proj" "/home/user/projects/other1" "/home/user/projects/other2"; exit 0 ;;
+    esac
+fi
+case "$1" in
     proj) printf '%s\n' "/home/user/projects/proj" ;;   # MATCH
     *)    printf '' ;;                                   # no-match -> empty stdout, exit 0
 esac

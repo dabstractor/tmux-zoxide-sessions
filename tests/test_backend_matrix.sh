@@ -164,16 +164,24 @@ echo ""
 echo "############################################################"
 echo "# SUBTEST B: zoxide shim (fake zoxide -> canned fixture dir)"
 echo "############################################################"
-# Install the fake zoxide into $TBIN (already front-of-PATH): '<TOKEN>' -> the
-# real fixture dir; anything else -> empty. (No '--' handling: matches the real
-# zoxide/zoxide-shim invocation form, which omits '--'.)
+# Install the fake zoxide into $TBIN (already front-of-PATH): models query [--] <kw>
+# and list-mode for -l/--list (like real zoxide); <TOKEN> -> the real fixture dir, else empty.
 cat > "$TBIN/zoxide" <<ZOX
 #!/bin/sh
+# Fake zoxide: models query [--] <kw> AND list-mode for -l/--list, like real zoxide.
+# Strip -- (real zoxide honors end-of-options); model list-mode for -l/--list.
 [ "\$1" = "query" ] || exit 0
 shift
+if [ "\$1" = "--" ]; then
+    shift      # -- consumed; everything after is a POSITIONAL query (NEVER list-mode after --)
+else
+    case "\$1" in
+        -l|--list) printf '%s\n' "$FIX/$TOKEN" "$FIX/extra1" "$FIX/extra2"; exit 0 ;;
+    esac
+fi
 case "\$1" in
-    $TOKEN) printf '%s\n' "$FIX/$TOKEN"; exit 0 ;;
-    *)      printf ''; exit 0 ;;
+    $TOKEN) printf '%s\n' "$FIX/$TOKEN"; exit 0 ;;   # MATCH (real dir)
+    *)      printf ''; exit 0 ;;                       # no-match: empty, exit 0
 esac
 ZOX
 chmod +x "$TBIN/zoxide"
