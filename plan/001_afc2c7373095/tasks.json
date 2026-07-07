@@ -65,7 +65,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T2.S2",
                   "title": "_resolve_zoxide() backend",
-                  "status": "Ready",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T2.S1"
@@ -82,7 +82,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T2.S3",
                   "title": "_resolve_z() backend (rupa/z) — APPLY CORRECTION A",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 2,
                   "dependencies": [
                     "P1.M1.T2.S1"
