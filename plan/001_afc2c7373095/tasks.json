@@ -119,21 +119,21 @@
           "type": "Milestone",
           "id": "P1.M2",
           "title": "Window-jump feature (manual)",
-          "status": "Planned",
+          "status": "Researching",
           "description": "Implement Feature A: prefix <key> opens a command-prompt; the typed query is resolved to a frecency directory and a new window opens there (named after the dir basename), falling back to the current pane's directory. This milestone delivers z-window.sh and creates the run file with the key binding.",
           "tasks": [
             {
               "type": "Task",
               "id": "P1.M2.T1",
               "title": "scripts/z-window.sh handler",
-              "status": "Researching",
+              "status": "Complete",
               "description": "The run-shell target of the window-jump binding. Resolves the query via the shared backend and opens a new window in the resolved (or current) directory.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M2.T1.S1",
                   "title": "Implement z-window.sh",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T2.S4"
@@ -153,14 +153,14 @@
               "type": "Task",
               "id": "P1.M2.T2",
               "title": "Window-jump key binding (create run file)",
-              "status": "Planned",
+              "status": "Researching",
               "description": "Create tmux-zoxide-sessions.tmux (the TPM run file) with its bash preamble, source resolve.sh, and the window-jump bind-key. The session-hook section is added later in P1.M3.T2.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M2.T2.S1",
                   "title": "Create run file with window binding",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T2.S1",
