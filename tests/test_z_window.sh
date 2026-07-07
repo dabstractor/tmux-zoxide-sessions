@@ -25,7 +25,7 @@ ZWIN="$REPO_ROOT/scripts/z-window.sh"
 # --- fixture: a REAL resolved dir (must exist or the active pane falls back to
 #     $HOME and corrupts the next `cur` — verification_notes.md §3) -----------
 FIX="$(mktemp -d)"
-mkdir -p "$FIX/proj"                 # fake zoxide resolves `proj` -> here (REAL)
+mkdir -p "$FIX/proj" "$FIX/obrien"   # fake zoxide resolves proj / o'brien -> here (REAL dirs)
 TBIN="$FIX/.tbin"; mkdir -p "$TBIN"
 
 cleanup() {
@@ -57,6 +57,7 @@ else
 fi
 case "$1" in
     proj)      printf '%s\n' "$FIX/proj"; exit 0 ;;                                # MATCH (real dir)
+    "o'brien") printf '%s\n' "$FIX/obrien"; exit 0 ;;                              # MATCH apostrophe query (Issue 2 regression)
     multiline) printf '%s\n' "$FIX/proj" "$FIX/other1" "$FIX/other2"; exit 0 ;;   # MULTI-LINE (defence-in-depth probe)
     *)         printf ''; exit 0 ;;                                # no-match: empty, exit 0
 esac
@@ -139,6 +140,32 @@ res=$(run_case multiline); delta=${res%%|*}; idx=${res##*|}
 check "C6a exactly 1 new window"   "1"                  "$delta"
 check "C6b NAME = basename(cur)"   "$(basename "$CUR")" "$(new_name "$idx")"
 check "C6c START_PATH = cur"       "$CUR"               "$(new_start "$idx")"
+
+echo "=== CASE 7: apostrophe query o'brien -> resolved dir, named obrien (Issue 2) ==="
+# Single-quote regression (PRD h2.3/h3.1 Issue 2). Before the binding fix (P1.M2.T1.S1) a
+# typed apostrophe closed the run-shell single-quote argument and the query was lost. This
+# proves z-window.sh receives $1=o'brien intact and resolves it. Direct invocation (Approach A,
+# reliable): the fake maps o'brien -> $FIX/obrien (a REAL dir). No CUR re-capture (mirrors CASE 2:
+# it asserts the resolved dir, not cur). NOTE: 'o'brien' is written with a BARE apostrophe inside
+# double quotes -- do NOT escape it (\' would insert a literal backslash and break the match).
+res=$(run_case "o'brien"); delta=${res%%|*}; idx=${res##*|}
+check "C7a exactly 1 new window"        "1"           "$delta"
+check "C7b NAME = obrien"              "obrien"      "$(new_name "$idx")"
+check "C7c START_PATH = resolved dir"  "$FIX/obrien" "$(new_start "$idx")"
+
+echo "=== CASE 8: apostrophe query via run-shell dispatch -> resolved (Issue 2, production path) ==="
+# Approach A dispatch variant: drive the REAL tmux run-shell with the post-%%-substitution
+# argument the FIXED binding produces for o'brien (.../z-window.sh "o'brien"). Exercises tmux
+# run-shell -> sh -c -> z-window.sh (the quoting layer the fix protects); independent of the
+# exact binding form (we construct the quoted arg here). Same outcome as CASE 7 via dispatch.
+before=$("$REAL_TMUX" -L "$SOCK" list-windows -t zs: -F '#{window_index}' | wc -l | tr -d ' ')
+"$REAL_TMUX" -L "$SOCK" run-shell "$ZWIN \"o'brien\""
+sleep 0.4
+after=$("$REAL_TMUX" -L "$SOCK" list-windows -t zs: -F '#{window_index}' | wc -l | tr -d ' ')
+idx=$("$REAL_TMUX" -L "$SOCK" list-windows -t zs: -F '#{window_index}' | sort -n | tail -1)
+check "C8a exactly 1 new window (dispatch)"        "1"           "$((after - before))"
+check "C8b NAME = obrien (dispatch)"               "obrien"      "$(new_name "$idx")"
+check "C8c START_PATH = resolved dir (dispatch)"   "$FIX/obrien" "$(new_start "$idx")"
 
 echo ""
 echo "RESULTS: pass=$pass fail=$fail"

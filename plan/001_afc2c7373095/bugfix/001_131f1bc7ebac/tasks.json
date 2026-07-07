@@ -4,7 +4,7 @@
       "type": "Phase",
       "id": "P1",
       "title": "Bugfix Release v1.0.1 — zoxide flag absorption + single-quote query",
-      "status": "Planned",
+      "status": "Researching",
       "description": "Fix two issues found in adversarial QA testing of tmux-zoxide-sessions v1.0: (1) MAJOR — zoxide flag absorption where leading-dash queries (-l/--list) dump the entire frecency database into a corrupted window, caused by a regression that removed the contract-required `--` end-of-options guard; (2) MINOR — single quotes in window-jump queries break resolution due to the binding's single-quoted run-shell argument. Both fixes include defence-in-depth hardening, test fixture improvements, and regression tests.",
       "milestones": [
         {
@@ -143,14 +143,14 @@
           "type": "Milestone",
           "id": "P1.M2",
           "title": "Issue 2 — single-quote query breakage fix (Minor)",
-          "status": "Researching",
+          "status": "Complete",
           "description": "Fix the binding quoting so that a window-jump query containing a single quote (e.g. a directory like o'brien) is delivered intact to z-window.sh. The root cause is that the `%%` substitution in the command-prompt binding is raw text with no escaping, and wrapping it in single quotes causes a typed `'` to terminate the argument prematurely. The fix wraps `%%` in shell double quotes within the existing single-quoted run-shell argument.",
           "tasks": [
             {
               "type": "Task",
               "id": "P1.M2.T1",
               "title": "Fix binding quoting for arbitrary characters and add regression test",
-              "status": "Researching",
+              "status": "Complete",
               "description": "Change the run-shell binding in tmux-zoxide-sessions.tmux to wrap `%%` in double quotes so single quotes (and spaces) survive both tmux's lexer and sh -c. Update the test_run_file.sh assertion that checks the binding format. Add an integration regression test proving a single-quote query resolves correctly.",
               "subtasks": [
                 {
@@ -171,7 +171,7 @@
                   "type": "Subtask",
                   "id": "P1.M2.T1.S2",
                   "title": "Add single-quote query regression test",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 2,
                   "dependencies": [
                     "P1.M2.T1.S1"
@@ -191,21 +191,21 @@
           "type": "Milestone",
           "id": "P1.M3",
           "title": "Documentation sync",
-          "status": "Planned",
+          "status": "Researching",
           "description": "Review and update README.md and any overview documentation to reflect the bugfix changes. Per the SOW §5 Mode B, this is the final changeset-level documentation task that sweeps the README for any stale content after all implementing subtasks complete.",
           "tasks": [
             {
               "type": "Task",
               "id": "P1.M3.T1",
               "title": "Sync changeset-level documentation",
-              "status": "Planned",
+              "status": "Researching",
               "description": "Final documentation sweep: review README.md and update any sections that reference the fixed behavior. The bugfix changes are primarily internal (resolver guard, caller guards, binding quoting), but the README's 'Known limitations' section may warrant review (e.g. noting that leading-dash queries are now handled safely, or that single-quote queries work). This task depends on ALL implementing subtasks.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M3.T1.S1",
                   "title": "Review and update README.md to reflect bugfix changes",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T1.S2",
