@@ -45,7 +45,7 @@ chmod +x "$TBIN/tmux"
 cat > "$TBIN/zoxide" <<'ZOX'
 #!/bin/sh
 [ "$1" = "query" ] || exit 0
-shift; [ "${1:-}" = "--" ] && shift        # honor the end-of-options guard (NOTE D)
+shift        # no '--' guard: real zoxide/zoxide-shim do not strip it (would break the shim)
 case "$1" in
     proj) printf '%s\n' "$FIX/proj"; exit 0 ;;   # MATCH (real dir)
     *)    printf ''; exit 0 ;;                    # no-match: empty, exit 0

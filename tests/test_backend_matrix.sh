@@ -7,13 +7,10 @@
 # any installed plugin's session-created hook cannot contaminate the result:
 #
 #   A. on-PATH 'zoxide'    — whatever 'zoxide' resolves to via the resolver's
-#                            EXACT invocation ('zoxide query -- <q>'). EXPECTED
+#                            EXACT invocation ('zoxide query <q>'). EXPECTED
 #                            is captured at run time, so this proves correct
 #                            integration with the real/shim binary on PATH,
-#                            never a hardcoded path (PRP gotcha). If the
-#                            on-PATH zoxide returns empty for the token (e.g.
-#                            a shim that mishandles '--'), the features must
-#                            still complete without relocating to a bogus dir.
+#                            never a hardcoded path (PRP gotcha).
 #   B. 'zoxide' shim       — a fake 'zoxide' returning a canned fixture dir.
 #                            Deterministic; asserts a real relocate/jump.
 #   C. rupa/z ('z' backend) — seeded _Z_DATA, @zoxide-sessions-z-sh set,
@@ -128,37 +125,52 @@ session_relocate() {  # session_relocate <expected_dir_or_empty> <session_name>
 }
 
 echo "############################################################"
-echo "# SUBTEST A: on-PATH zoxide (resolver's real 'zoxide query -- <q>')"
+echo "# SUBTEST A: on-PATH zoxide (resolver's real 'zoxide query <q>')"
 echo "############################################################"
-# Capture what the on-PATH 'zoxide' resolves the token to via the resolver's
-# EXACT invocation, so the assertion tracks the real backend's behavior (never a
-# hardcoded path). Seed the fixture dir into the frecency index first so there is
-# a deterministic match on real zoxide; a shim that ignores 'add' is harmless.
+# Capture a GENUINE positive resolve through lib/resolve.sh against whatever
+# 'zoxide' is on PATH (native binary OR rupa/z-backed shim). The prior form
+# seeded a temp token via `zoxide add` and asserted the features matched
+# `zoxide query <token>` — but `add` is a no-op against the rupa/z-backed shim
+# (it does not write rupa/z's ~/.z), so EXPECTED was always empty and the
+# assertion collapsed to empty-vs-empty: it passed whether resolution worked
+# or not (Finding 2 tautology). Fix: probe the REAL index for a token it
+# already resolves to a non-empty, existing path (never seed — never assume
+# `add` works), then assert the features land at exactly that path. If the
+# index has no resolvable token, SKIP rather than pass vacuously.
 ZOXIDE_ON_PATH="$(command -v zoxide 2>/dev/null || true)"
-ZOXIDE_SEEDED=0
+TOKEN_A=""; EXPECTED_A=""
 if [ -n "$ZOXIDE_ON_PATH" ]; then
-    zoxide add "$FIX/$TOKEN" 2>/dev/null && ZOXIDE_SEEDED=1
+    for cand in tmux config nvim emacs vim git projects src code docs work home; do
+        hit=$(zoxide query "$cand" 2>/dev/null || true)
+        if [ -n "$hit" ] && [ -d "$hit" ]; then
+            TOKEN_A="$cand"; EXPECTED_A="$hit"; break
+        fi
+    done
 fi
-EXPECTED_A=$(zoxide query -- "$TOKEN" 2>/dev/null)
 echo "on-PATH zoxide: ${ZOXIDE_ON_PATH:-(none)}"
-echo "resolver captured EXPECTED_A=[$EXPECTED_A] for token '$TOKEN'"
-boot
-"$REAL_TMUX" -L "$SOCK" set -g '@zoxide-sessions-backend' zoxide
-window_jump "$EXPECTED_A" "$TOKEN"
-session_relocate "$EXPECTED_A" "$TOKEN"
-# cleanup the seeded token from the user's frecency index (real zoxide only).
-if [ "$ZOXIDE_SEEDED" = "1" ]; then zoxide remove "$FIX/$TOKEN" 2>/dev/null || true; fi
+if [ -z "$EXPECTED_A" ]; then
+    echo "SKIP  subtest A: on-PATH zoxide has no resolvable token (empty index);"
+    echo "      cannot prove a genuine positive resolve. Populate zoxide / the"
+    echo "      zoxide-shim's rupa/z ~/.z with >=1 ranked dir to exercise this."
+else
+    echo "resolver captured TOKEN_A='$TOKEN_A' EXPECTED_A=[$EXPECTED_A]"
+    boot
+    "$REAL_TMUX" -L "$SOCK" set -g '@zoxide-sessions-backend' zoxide
+    window_jump "$EXPECTED_A" "$TOKEN_A"
+    session_relocate "$EXPECTED_A" "$TOKEN_A"
+fi
 
 echo ""
 echo "############################################################"
 echo "# SUBTEST B: zoxide shim (fake zoxide -> canned fixture dir)"
 echo "############################################################"
 # Install the fake zoxide into $TBIN (already front-of-PATH): '<TOKEN>' -> the
-# real fixture dir; anything else -> empty. Honors the resolver's '--' guard.
+# real fixture dir; anything else -> empty. (No '--' handling: matches the real
+# zoxide/zoxide-shim invocation form, which omits '--'.)
 cat > "$TBIN/zoxide" <<ZOX
 #!/bin/sh
 [ "\$1" = "query" ] || exit 0
-shift; [ "\${1:-}" = "--" ] && shift
+shift
 case "\$1" in
     $TOKEN) printf '%s\n' "$FIX/$TOKEN"; exit 0 ;;
     *)      printf ''; exit 0 ;;

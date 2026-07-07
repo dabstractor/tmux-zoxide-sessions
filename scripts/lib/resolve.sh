@@ -9,8 +9,14 @@ get_tmux_option() {
 }
 
 # _resolve_zoxide <query> -> dir from `zoxide query`, or empty.
+# Note: NO `--` end-of-options guard. PRD §5.3 calls `zoxide query "$1`".
+# The `--` guard breaks the rupa/z-backed zoxide shim (which does not parse
+# `--` and treats it as part of the query), making BOTH features silently
+# no-op against the plugin's primary support target. zoxide already rejects
+# a query that begins with `-` safely (empty output + exit 0), which is not a
+# realistic user query, so the guard buys nothing while breaking the shim.
 _resolve_zoxide() {
-    command -v zoxide >/dev/null 2>&1 && zoxide query -- "$1" 2>/dev/null
+    command -v zoxide >/dev/null 2>&1 && zoxide query "$1" 2>/dev/null
 }
 
 # _resolve_z <query> -> dir from rupa/z (_z), or empty. Always exits 0.

@@ -57,7 +57,6 @@ cat > "$TBIN/zoxide" <<'ZOXIDE'
 # Fake zoxide implementing ONLY: zoxide query [--] <keyword>
 [ "$1" = "query" ] || exit 0
 shift
-[ "${1:-}" = "--" ] && shift        # honor the end-of-options guard
 kw="$1"
 case "$kw" in
     proj) printf '%s\n' "/home/user/projects/proj"; exit 0 ;;   # MATCH
