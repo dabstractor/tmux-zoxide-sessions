@@ -191,21 +191,21 @@
           "type": "Milestone",
           "id": "P1.M3",
           "title": "Documentation sync",
-          "status": "Researching",
+          "status": "Complete",
           "description": "Review and update README.md and any overview documentation to reflect the bugfix changes. Per the SOW §5 Mode B, this is the final changeset-level documentation task that sweeps the README for any stale content after all implementing subtasks complete.",
           "tasks": [
             {
               "type": "Task",
               "id": "P1.M3.T1",
               "title": "Sync changeset-level documentation",
-              "status": "Researching",
+              "status": "Complete",
               "description": "Final documentation sweep: review README.md and update any sections that reference the fixed behavior. The bugfix changes are primarily internal (resolver guard, caller guards, binding quoting), but the README's 'Known limitations' section may warrant review (e.g. noting that leading-dash queries are now handled safely, or that single-quote queries work). This task depends on ALL implementing subtasks.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M3.T1.S1",
                   "title": "Review and update README.md to reflect bugfix changes",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T1.S2",
