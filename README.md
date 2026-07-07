@@ -136,6 +136,13 @@ session relocate is a no-op.
   interception).
 - `skip-names` is whitespace-separated, so entries cannot contain spaces.
 - `home-dir` is a single directory, not a list.
+- Path normalization uses `readlink -f`, which is GNU; on systems without it
+  (some BSDs, or macOS default `readlink`), a symlinked `$HOME` may not fully
+  canonicalize and the comparison falls back to the literal path (trailing
+  slashes are still normalized).
+- A session restored by resurrect/continuum whose saved pane directory *was*
+  `$HOME` passes the `$HOME` guard and is relocated — a benign false positive
+  of the guard model rather than a bug, and arguably desirable.
 
 ## License
 MIT

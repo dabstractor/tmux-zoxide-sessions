@@ -251,7 +251,7 @@
           "type": "Milestone",
           "id": "P1.M4",
           "title": "Documentation, packaging & acceptance",
-          "status": "Ready",
+          "status": "Complete",
           "description": "Author the README, set/commit executable bits, run the PRD §7 verification matrix and §9 acceptance criteria, and run the final changeset-level documentation sync.",
           "tasks": [
             {
@@ -320,14 +320,14 @@
               "type": "Task",
               "id": "P1.M4.T3",
               "title": "Sync changeset-level documentation",
-              "status": "Ready",
+              "status": "Complete",
               "description": "Final Mode B documentation sweep: reconcile README.md against the shipped v1.0 behavior so there is no drift, especially around the validated corrections (rupa/z resolver now truly empty-on-no-match; the set-hook -g reload-safe composition story).",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M4.T3.S1",
                   "title": "Reconcile README with shipped behavior",
-                  "status": "Ready",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M4.T1.S1",
