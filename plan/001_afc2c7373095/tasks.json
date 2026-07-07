@@ -11,7 +11,7 @@
           "type": "Milestone",
           "id": "P1.M1",
           "title": "Foundation — resolver library & repo scaffolding",
-          "status": "Planned",
+          "status": "Researching",
           "description": "Establish the file tree, LICENSE, and the shared scripts/lib/resolve.sh library (get_tmux_option + the three resolver backends + the resolve() dispatcher). This library is sourced by the run file and both feature scripts, so it is the hard prerequisite for every later milestone. Apply Corrections A & B here.",
           "tasks": [
             {
@@ -42,7 +42,7 @@
               "type": "Task",
               "id": "P1.M1.T2",
               "title": "Shared resolver library scripts/lib/resolve.sh",
-              "status": "Planned",
+              "status": "Researching",
               "description": "Build the sourced POSIX-sh library that both features share: get_tmux_option(), the zoxide and rupa/z backends, and the resolve() dispatcher. This is the dependency root for all feature work. Two validated corrections (A: rupa/z no-match false positive; B: resolve() always-exit-0) are applied here.",
               "subtasks": [
                 {
@@ -82,7 +82,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T2.S3",
                   "title": "_resolve_z() backend (rupa/z) — APPLY CORRECTION A",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 2,
                   "dependencies": [
                     "P1.M1.T2.S1"
@@ -98,7 +98,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T2.S4",
                   "title": "resolve() dispatcher — APPLY CORRECTION B",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T2.S2",
