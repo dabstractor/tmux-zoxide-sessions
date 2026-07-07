@@ -16,3 +16,16 @@ prompt=$(get_tmux_option "@zoxide-sessions-prompt" "z to:")
 tmux bind-key "$key" \
     command-prompt -p "$prompt" \
     "run-shell '$CURRENT_DIR/scripts/z-window.sh %%'"
+
+# --- 2. Session auto-relocate hook -------------------------------------------
+# Relocates a newly-created session's first pane from $HOME to the
+# zoxide-resolved directory matching its name.
+auto_session=$(get_tmux_option "@zoxide-sessions-auto-session" "on")
+if [ "$auto_session" != "off" ]; then
+    SESSION_SCRIPT="$CURRENT_DIR/scripts/z-session.sh"
+    # Quoting mirrors tmux-session-history's proven hooks: the stored command
+    # is `run-shell -b "/abs/path/z-session.sh \"#{session_name}\""`, passing
+    # the (possibly spaced) session name through as a single $1.
+    tmux set-hook -g session-created \
+        "run-shell -b '${SESSION_SCRIPT} \"#{session_name}\"'"
+fi

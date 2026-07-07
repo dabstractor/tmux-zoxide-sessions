@@ -258,14 +258,14 @@
               "type": "Task",
               "id": "P1.M4.T1",
               "title": "README.md",
-              "status": "Planned",
+              "status": "Complete",
               "description": "Author the complete README from PRD §5.6: install (TPM + manual), usage (both features), the full 8-option table, backends, scope & compatibility, and known limitations.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M4.T1.S1",
                   "title": "Author README.md",
-                  "status": "Planned",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T2.S4",
@@ -290,14 +290,14 @@
               "type": "Task",
               "id": "P1.M4.T2",
               "title": "Executable bits & acceptance verification",
-              "status": "Planned",
+              "status": "Researching",
               "description": "Set and commit executable bits on the run file and scripts, then execute the PRD §7 10-case test matrix and verify the §9 acceptance criteria.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M4.T2.S1",
                   "title": "chmod +x, commit bits, run §7 matrix, verify §9",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 2,
                   "dependencies": [
                     "P1.M1.T2.S4",

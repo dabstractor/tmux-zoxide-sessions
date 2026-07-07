@@ -78,11 +78,11 @@ contains() {  # contains <desc> <haystack> <needle>  (fixed-string substring mat
     else echo "FAIL  $1 (expected haystack to contain [$3]; got=[$2])"; fail=$((fail+1)); fi
 }
 
-echo "=== C0: PART 1 only — no session-hook code (PART 2 = P1.M3.T2.S1) ==="
+echo "=== C0: PART 2 present — session-created hook wired (P1.M3.T2.S1) ==="
 if grep -Eq 'set-hook|z-session\.sh|@zoxide-sessions-auto-session' "$RUN"; then
-    echo "FAIL  C0: run file contains session-hook code (must be PART 1 only)"; fail=$((fail+1))
+    echo "PASS  C0: PART 2 present (session-hook code)"; pass=$((pass+1))
 else
-    echo "PASS  C0: no session-hook code (PART 1 only)"; pass=$((pass+1))
+    echo "FAIL  C0: run file missing PART 2 session-hook code (append is P1.M3.T2.S1)"; fail=$((fail+1))
 fi
 
 echo "=== CASE 1: default options -> binding on 'g', prompt 'z to:', abs path + %% ==="
