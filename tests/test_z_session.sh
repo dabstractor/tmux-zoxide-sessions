@@ -64,18 +64,23 @@ export PATH="$TBIN:$PATH"
 export FIX
 
 # boot a fresh isolated server + set the options the handler reads.
+# CRITICAL: boot with `tmux -f /dev/null` so the USER's tmux.conf is NOT sourced (a
+# stray session-created hook from an installed plugin would pollute the assertions —
+# see P1.M4.T2.S1 findings). The anchor session `zs` MUST stay alive for the whole
+# case: killing the last session on a server destroys the server (tmux exits when no
+# sessions remain), which would silently drop every `set -g` option we just applied.
+# Options are set AFTER the anchor exists and are NOT cleared until the next boot.
 boot() {
     "$REAL_TMUX" -L "$SOCK" kill-server 2>/dev/null || true
     sleep 0.2
-    # seed then clear so option defaults are clean per-case
-    "$REAL_TMUX" -L "$SOCK" new-session -d -s _seed -c "$FIX" 2>/dev/null || true
-    sleep 0.1
+    "$REAL_TMUX" -f /dev/null -L "$SOCK" new-session -d -s zs -c "$FIX" \
+        || { echo "FATAL: boot new-session"; exit 2; }
+    sleep 0.2
     "$REAL_TMUX" -L "$SOCK" set -g '@zoxide-sessions-backend' zoxide 2>/dev/null
     "$REAL_TMUX" -L "$SOCK" set -g '@zoxide-sessions-home-dir' "$FIX/home" 2>/dev/null
     # reset the toggleable options each boot (prior cases may have set them)
     "$REAL_TMUX" -L "$SOCK" set -g '@zoxide-sessions-auto-session' on 2>/dev/null
     "$REAL_TMUX" -L "$SOCK" set -gu '@zoxide-sessions-window-name' 2>/dev/null
-    "$REAL_TMUX" -L "$SOCK" kill-session -t _seed 2>/dev/null || true
 }
 
 pass=0; fail=0

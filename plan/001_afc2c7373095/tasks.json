@@ -4,7 +4,7 @@
       "type": "Phase",
       "id": "P1",
       "title": "tmux-zoxide-sessions v1.0 — Greenfield MVP",
-      "status": "Planned",
+      "status": "Researching",
       "description": "Ship the complete plugin from the PRD verbatim spec: (1) the shared frecency resolver library (zoxide / rupa-z / auto), (2) the manual window-jump key binding, (3) the automatic session-created auto-relocate hook, plus full configuration (8 tmux options), README, and LICENSE. The plugin must pass the PRD §7 10-case verification matrix and satisfy §9 acceptance criteria on tmux 3.6b with real zoxide, a zoxide shim, and rupa/z. Architecture findings and two validated corrections live in plan/001_afc2c7373095/architecture/findings_and_risks.md — implementing agents MUST apply Correction A (rupa/z false-positive fix) and Correction B (resolve() exit-0 hardening).",
       "milestones": [
         {
@@ -251,7 +251,7 @@
           "type": "Milestone",
           "id": "P1.M4",
           "title": "Documentation, packaging & acceptance",
-          "status": "Planned",
+          "status": "Ready",
           "description": "Author the README, set/commit executable bits, run the PRD §7 verification matrix and §9 acceptance criteria, and run the final changeset-level documentation sync.",
           "tasks": [
             {
@@ -290,14 +290,14 @@
               "type": "Task",
               "id": "P1.M4.T2",
               "title": "Executable bits & acceptance verification",
-              "status": "Researching",
+              "status": "Complete",
               "description": "Set and commit executable bits on the run file and scripts, then execute the PRD §7 10-case test matrix and verify the §9 acceptance criteria.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M4.T2.S1",
                   "title": "chmod +x, commit bits, run §7 matrix, verify §9",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 2,
                   "dependencies": [
                     "P1.M1.T2.S4",
@@ -320,14 +320,14 @@
               "type": "Task",
               "id": "P1.M4.T3",
               "title": "Sync changeset-level documentation",
-              "status": "Planned",
+              "status": "Ready",
               "description": "Final Mode B documentation sweep: reconcile README.md against the shipped v1.0 behavior so there is no drift, especially around the validated corrections (rupa/z resolver now truly empty-on-no-match; the set-hook -g reload-safe composition story).",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M4.T3.S1",
                   "title": "Reconcile README with shipped behavior",
-                  "status": "Planned",
+                  "status": "Ready",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M4.T1.S1",
