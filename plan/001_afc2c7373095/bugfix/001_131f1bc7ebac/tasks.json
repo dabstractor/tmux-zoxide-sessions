@@ -4,21 +4,21 @@
       "type": "Phase",
       "id": "P1",
       "title": "Bugfix Release v1.0.1 — zoxide flag absorption + single-quote query",
-      "status": "Researching",
+      "status": "Ready",
       "description": "Fix two issues found in adversarial QA testing of tmux-zoxide-sessions v1.0: (1) MAJOR — zoxide flag absorption where leading-dash queries (-l/--list) dump the entire frecency database into a corrupted window, caused by a regression that removed the contract-required `--` end-of-options guard; (2) MINOR — single quotes in window-jump queries break resolution due to the binding's single-quoted run-shell argument. Both fixes include defence-in-depth hardening, test fixture improvements, and regression tests.",
       "milestones": [
         {
           "type": "Milestone",
           "id": "P1.M1",
           "title": "Issue 1 — zoxide flag absorption fix (Major)",
-          "status": "Researching",
+          "status": "Ready",
           "description": "Three-layer fix for the zoxide flag absorption bug: (1) restore the `--` end-of-options guard in _resolve_zoxide, (2) add POSIX-compliant defence-in-depth guards in z-window.sh and z-session.sh that reject multi-line/non-directory resolved values, (3) harden all 6 fake-zoxide test fixtures to model real zoxide's flag parsing and add regression tests for leading-dash queries. The fixture hardening MUST precede the guard restoration because restoring `--` changes the fake zoxide's argv and would break existing tests if fixtures aren't synchronized.",
           "tasks": [
             {
               "type": "Task",
               "id": "P1.M1.T1",
               "title": "Synchronize resolver `--` guard with hardened test fixtures",
-              "status": "Researching",
+              "status": "Complete",
               "description": "Restore the `--` end-of-options guard in _resolve_zoxide (the root fix for Issue 1) while simultaneously hardening all 6 fake-zoxide test fixtures so they remain compatible. The fixture hardening (S1) must be done BEFORE the guard restoration (S2) because restoring `zoxide query -- \"$1\"` changes the fake zoxide's argv from `query <kw>` to `query -- <kw>`, and every fake must strip `--` or existing proj-match tests silently break.",
               "subtasks": [
                 {
@@ -39,7 +39,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T1.S2",
                   "title": "Restore `--` end-of-options guard in _resolve_zoxide + rewrite false comment",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T1.S1"

@@ -9,13 +9,20 @@ get_tmux_option() {
 }
 
 # _resolve_zoxide <query> -> dir from `zoxide query`, or empty.
-# Note: NO `--` end-of-options guard. PRD §5.3 calls `zoxide query "$1`".
-# The `--` guard breaks the rupa/z-backed zoxide shim (which does not parse
-# `--` and treats it as part of the query), making BOTH features silently
-# no-op against the plugin's primary support target. zoxide already rejects
-# a query that begins with `-` safely (empty output + exit 0), which is not a
-# realistic user query, so the guard buys nothing while breaking the shim.
+# A query that begins with `-` (e.g. `-l` / `--list`, which real zoxide would
+# interpret as list mode and use to dump the entire frecency DB) is rejected
+# up front and returns empty, honoring the documented contract that the
+# resolver returns empty on a no-match / non-directory query. We deliberately
+# do NOT insert a `--` end-of-options guard before the query: this plugin
+# supports rupa/z-backed `zoxide` shims (see PRD §9 / README "Backends") that
+# do not parse `--` and would treat it as part of the query, silently
+# breaking resolution for every legitimate query. Rejecting leading-dash
+# queries instead fixes the dump symptom for both real zoxide and the shim,
+# without breaking either. The `z` backend never calls zoxide, so this guard
+# has no effect on it.
 _resolve_zoxide() {
+    [ -n "$1" ] || return 0
+    case "$1" in -*) return 0 ;; esac
     command -v zoxide >/dev/null 2>&1 && zoxide query "$1" 2>/dev/null
 }
 

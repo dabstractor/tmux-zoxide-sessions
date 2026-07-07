@@ -13,9 +13,15 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 key=$(get_tmux_option "@zoxide-sessions-key" "g")
 prompt=$(get_tmux_option "@zoxide-sessions-prompt" "z to:")
 
+# The command-prompt result is delivered to z-window.sh via a transient tmux
+# user option (@zoxide-sessions-last-query) rather than embedded raw in the
+# run-shell argument. `%%%` (not `%%`) makes tmux escape quotation marks in
+# the typed query, so values containing ', ", $, spaces, ;, or & survive the
+# tmux command parser intact and are read back verbatim by the script. The
+# option is unset immediately afterward so it never leaks across invocations.
 tmux bind-key "$key" \
     command-prompt -p "$prompt" \
-    "run-shell '$CURRENT_DIR/scripts/z-window.sh \"%%\"'"
+    "set-option -g @zoxide-sessions-last-query \"%%%\"; run-shell '$CURRENT_DIR/scripts/z-window.sh'; set-option -gu @zoxide-sessions-last-query"
 
 # --- 2. Session auto-relocate hook -------------------------------------------
 # Relocates a newly-created session's first pane from $HOME to the

@@ -8,6 +8,12 @@
 # there, named after the directory basename. The query is a zoxide query, not
 # a literal window name.
 #
+# The query may be supplied two ways:
+#   - as command-line arguments (direct / scripted / test invocation), or
+#   - via the @zoxide-sessions-last-query tmux user option, which the key
+#     binding sets. The user-option path avoids lossy shell quoting of the
+#     command-prompt result (queries containing ', ", $, etc. survive intact).
+#
 # With no query, or when no match is found, open the window in the current
 # pane's directory and name it after that. This matches a plain
 # `new-window -c "#{pane_current_path}"`.
@@ -20,6 +26,8 @@ NL='
 '
 
 query="$*"
+# Fall back to the user option the binding sets when invoked without args.
+[ -n "$query" ] || query=$(tmux show-option -gqv "@zoxide-sessions-last-query" 2>/dev/null)
 
 # Pull the current pane's directory and session from the live tmux server.
 cur=$(tmux display-message -p '#{pane_current_path}' 2>/dev/null)
