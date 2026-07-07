@@ -12,3 +12,13 @@ get_tmux_option() {
 _resolve_zoxide() {
     command -v zoxide >/dev/null 2>&1 && zoxide query -- "$1" 2>/dev/null
 }
+
+# _resolve_z <query> -> dir from rupa/z (_z), or empty. Always exits 0.
+_resolve_z() {
+    z_sh=$(tmux show-option -gqv "@zoxide-sessions-z-sh" 2>/dev/null || true)
+    [ -n "$z_sh" ] && [ -r "$z_sh" ] || return 0
+    shell="sh"; command -v zsh >/dev/null 2>&1 && shell="zsh"
+    # shellcheck disable=SC2016 # inner $1/$2/$o/$n expand inside the subshell, not the parent
+    "$shell" -c '. "$1" 2>/dev/null || exit 0; o=$(pwd); _z "$2" 2>/dev/null; n=$(pwd); [ "$o" != "$n" ] && printf "%s\n" "$n"; exit 0' \
+        _ "$z_sh" "$1" 2>/dev/null
+}
