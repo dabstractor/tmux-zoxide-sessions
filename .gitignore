@@ -1,0 +1,17 @@
+# pi-subagents runtime artifacts (transcripts, meta, progress, cached outputs).
+# Canonical research/architecture outputs live under plan/.
+.pi-subagents/
+
+# Build artifacts
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
