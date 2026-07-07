@@ -64,6 +64,7 @@ fi
 case "$1" in
     proj)        printf '%s\n' "$FIX/proj"; exit 0 ;;     # MATCH (real dir)
     "two words") printf '%s\n' "$FIX/twowords"; exit 0 ;; # MATCH (spaced name; real dir)
+    multiline)   printf '%s\n' "$FIX/proj" "$FIX/other1" "$FIX/other2"; exit 0 ;;  # MULTI-LINE (defence-in-depth probe)
     *)           printf ''; exit 0 ;;                     # no-match: empty, exit 0
 esac
 ZOX
@@ -149,6 +150,30 @@ boot
 # If $1 had been split, resolve would get "two" (no match -> empty) and the pane would NOT
 # relocate. A relocated pane PROVES name="$1" preserved "two words" through resolve->respawn.
 check "C9 spaced-name relocates to resolved" "$FIX/twowords" "$(cwd_of "two words")"
+
+echo "=== CASE 11: session named '-l' at home -> NO relocate (Issue 1: leading-dash) ==="
+# `-l` exercises the leading-dash input path (the exact user repro). The handler reaches
+# resolve->guard because `display-message -t -l` (argv identical to z-session.sh's own
+# `-t "$name"`) is treated as -t=<value>, not a flag.
+boot
+# A session literally named '-l' cannot be created with `new-session -s -l` (tmux parses
+# -l as a flag: 'unknown flag -l'). Create under a placeholder, then rename via `--`
+# (end-of-options) so '-l' becomes the positional new name. Do NOT kill the anchor `zs`.
+"$REAL_TMUX" -L "$SOCK" new-session -d -s tmpl -c "$FIX/home"; sleep 0.3
+"$REAL_TMUX" -L "$SOCK" rename-session -t tmpl -- -l; sleep 0.2
+check "C11a pre-relocate cwd = home"        "$FIX/home" "$(cwd_of -l)"
+"$ZSESS" -l; sleep 0.5
+check "C11b post-handler cwd = home (no relocate)" "$FIX/home" "$(cwd_of -l)"
+
+echo "=== CASE 12: multi-line resolved value -> guard rejects, NO relocate (Issue 1) ==="
+# `multiline` is a normal positional query whose fake returns 3 lines; that dump can ONLY be
+# caught by the defence-in-depth caller guard (P1.M1.T2.S2), NOT the resolver `--` fix, so
+# this isolates the guard regardless of whether P1.M1.T1.S2 has landed.
+boot
+"$REAL_TMUX" -L "$SOCK" new-session -d -s multiline -c "$FIX/home"; sleep 0.3
+check "C12a pre-relocate cwd = home"        "$FIX/home" "$(cwd_of multiline)"
+"$ZSESS" multiline; sleep 0.5
+check "C12b post-handler cwd = home (no relocate)" "$FIX/home" "$(cwd_of multiline)"
 
 echo ""
 echo "RESULTS: pass=$pass fail=$fail"

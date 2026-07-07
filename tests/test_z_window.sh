@@ -56,8 +56,9 @@ else
     esac
 fi
 case "$1" in
-    proj) printf '%s\n' "$FIX/proj"; exit 0 ;;   # MATCH (real dir)
-    *)    printf ''; exit 0 ;;                    # no-match: empty, exit 0
+    proj)      printf '%s\n' "$FIX/proj"; exit 0 ;;                                # MATCH (real dir)
+    multiline) printf '%s\n' "$FIX/proj" "$FIX/other1" "$FIX/other2"; exit 0 ;;   # MULTI-LINE (defence-in-depth probe)
+    *)         printf ''; exit 0 ;;                                # no-match: empty, exit 0
 esac
 ZOX
 chmod +x "$TBIN/zoxide"
@@ -118,6 +119,26 @@ CUR=$(tmux display-message -p '#{pane_current_path}')
 res=$(run_case foo bar); delta=${res%%|*}; idx=${res##*|}
 check "spaced query -> exactly 1 window" "1"                  "$delta"
 check "spaced no-match NAME = basename(cur)" "$(basename "$CUR")" "$(new_name "$idx")"
+
+echo "=== CASE 5: query '-l' -> window falls back to cur (Issue 1: leading-dash) ==="
+# `-l` exercises the leading-dash input path (the exact user repro: prefix g, type -l).
+# It documents the resolver's intended empty-return; until P1.M1.T1.S2 lands it passes
+# via the caller guard instead. Either way the window lands safely in $cur.
+CUR=$(tmux display-message -p '#{pane_current_path}')   # re-capture: active window shifted
+res=$(run_case -l); delta=${res%%|*}; idx=${res##*|}
+check "C5a exactly 1 new window"   "1"                  "$delta"
+check "C5b NAME = basename(cur)"   "$(basename "$CUR")" "$(new_name "$idx")"
+check "C5c START_PATH = cur"       "$CUR"               "$(new_start "$idx")"
+
+echo "=== CASE 6: multi-line resolved value -> guard rejects, window falls back to cur ==="
+# `multiline` is a normal positional query (no leading dash) whose fake returns 3 lines.
+# That dump can ONLY be caught by the defence-in-depth caller guard (P1.M1.T2.S1), NOT by
+# the resolver `--` fix — so CASE 6 isolates the guard even if the resolver later regresses.
+CUR=$(tmux display-message -p '#{pane_current_path}')   # re-capture: active window shifted
+res=$(run_case multiline); delta=${res%%|*}; idx=${res##*|}
+check "C6a exactly 1 new window"   "1"                  "$delta"
+check "C6b NAME = basename(cur)"   "$(basename "$CUR")" "$(new_name "$idx")"
+check "C6c START_PATH = cur"       "$CUR"               "$(new_start "$idx")"
 
 echo ""
 echo "RESULTS: pass=$pass fail=$fail"
