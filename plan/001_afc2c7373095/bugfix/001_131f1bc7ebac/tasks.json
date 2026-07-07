@@ -143,21 +143,21 @@
           "type": "Milestone",
           "id": "P1.M2",
           "title": "Issue 2 — single-quote query breakage fix (Minor)",
-          "status": "Planned",
+          "status": "Researching",
           "description": "Fix the binding quoting so that a window-jump query containing a single quote (e.g. a directory like o'brien) is delivered intact to z-window.sh. The root cause is that the `%%` substitution in the command-prompt binding is raw text with no escaping, and wrapping it in single quotes causes a typed `'` to terminate the argument prematurely. The fix wraps `%%` in shell double quotes within the existing single-quoted run-shell argument.",
           "tasks": [
             {
               "type": "Task",
               "id": "P1.M2.T1",
               "title": "Fix binding quoting for arbitrary characters and add regression test",
-              "status": "Planned",
+              "status": "Researching",
               "description": "Change the run-shell binding in tmux-zoxide-sessions.tmux to wrap `%%` in double quotes so single quotes (and spaces) survive both tmux's lexer and sh -c. Update the test_run_file.sh assertion that checks the binding format. Add an integration regression test proving a single-quote query resolves correctly.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M2.T1.S1",
                   "title": "Double-quote `%%` in the run-shell binding + update test_run_file.sh C3 assertion",
-                  "status": "Researching",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [],
                   "context_scope": "CONTRACT DEFINITION:\n1. RESEARCH NOTE: See architecture/research_issue2_quoting.md. tmux `%%` is a raw textual substitution with no escaping. The binding currently wraps `%%` in single quotes: `\"run-shell '$CURRENT_DIR/scripts/z-window.sh %%'\"`. When a user types a query with `'` (e.g. `o'brien`), the apostrophe terminates the single-quoted run-shell argument prematurely. The fix wraps `%%` in double quotes: `\"run-shell '$CURRENT_DIR/scripts/z-window.sh \\\"%%\\\"'\"` (in the bash run file, `\\\"` produces a literal `\"` in the emitted tmux template, so tmux sees `run-shell '.../z-window.sh \"%%\"'`). tmux's outer single quotes pass the inner `\"...\"` through untouched; sh -c then protects `'` and spaces inside double quotes. Trace for `o'brien`: substitute -> `run-shell '.../z-window.sh \"o'brien\"'` -> tmux lex -> shell cmd `.../z-window.sh \"o'brien\"` -> sh -c -> $1=o'brien. For empty query (Enter): `\"\"` -> empty $1 -> matches existing fallback behavior.\n2. INPUT: tmux-zoxide-sessions.tmux line ~18 currently has: `\"run-shell '$CURRENT_DIR/scripts/z-window.sh %%'\"`. test_run_file.sh has assertion C3: `contains \"C3: abs path to z-window.sh + %% kept\" \"$b\" \"run-shell '$REPO_ROOT/scripts/z-window.sh %%'\"`.\n3. LOGIC: In tmux-zoxide-sessions.tmux, change the binding from `\"run-shell '$CURRENT_DIR/scripts/z-window.sh %%'\"` to `\"run-shell '$CURRENT_DIR/scripts/z-window.sh \\\"%%\\\"'\"`. In test_run_file.sh, update C3's needle from `\"run-shell '$REPO_ROOT/scripts/z-window.sh %%'\"` to `\"run-shell '$REPO_ROOT/scripts/z-window.sh \\\"%%\\\"'\"` (or a substring that matches the new form). Verify with `sh tests/test_run_file.sh` that the binding registration test passes.\n4. OUTPUT: The registered tmux binding now wraps `%%` in double quotes. test_run_file.sh passes with updated assertion. The existing test suite must remain green (this change only affects the binding format string, not resolver/handler logic).\n5. DOCS: none — the README's 'Window jump' usage section does not document the exact quoting of the binding. No user-facing/config surface change (the key, prompt, and behavior are identical for normal queries).",
@@ -171,7 +171,7 @@
                   "type": "Subtask",
                   "id": "P1.M2.T1.S2",
                   "title": "Add single-quote query regression test",
-                  "status": "Planned",
+                  "status": "Researching",
                   "story_points": 2,
                   "dependencies": [
                     "P1.M2.T1.S1"

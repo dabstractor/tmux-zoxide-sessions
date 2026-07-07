@@ -15,7 +15,7 @@ prompt=$(get_tmux_option "@zoxide-sessions-prompt" "z to:")
 
 tmux bind-key "$key" \
     command-prompt -p "$prompt" \
-    "run-shell '$CURRENT_DIR/scripts/z-window.sh %%'"
+    "run-shell '$CURRENT_DIR/scripts/z-window.sh \"%%\"'"
 
 # --- 2. Session auto-relocate hook -------------------------------------------
 # Relocates a newly-created session's first pane from $HOME to the

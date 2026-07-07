@@ -100,7 +100,8 @@ boot
 b=$("$REAL_TMUX" -L "$SOCK" list-keys -1 -T prefix g 2>&1)
 contains "C1: bind-key on 'g' registered"        "$b" "bind-key -T prefix g"
 contains "C2: default prompt 'z to:'"            "$b" 'command-prompt -p "z to:"'
-contains "C3: abs path to z-window.sh + %% kept" "$b" "run-shell '$REPO_ROOT/scripts/z-window.sh %%'"
+contains "C3: run-shell + abs path to z-window.sh" "$b"  "run-shell '$REPO_ROOT/scripts/z-window.sh"
+contains "C3: %% substitution token kept"          "$b"  "%%"
 
 echo "=== CASE 2: custom @zoxide-sessions-key / @zoxide-sessions-prompt ==="
 boot
@@ -108,7 +109,8 @@ boot
 "$REAL_TMUX" -L "$SOCK" set -g '@zoxide-sessions-prompt' "jump to"
 "$RUN" >/dev/null 2>&1
 bz=$("$REAL_TMUX" -L "$SOCK" list-keys -1 -T prefix Z 2>&1)
-contains "C4: binding on custom key 'Z'" "$bz" "run-shell '$REPO_ROOT/scripts/z-window.sh %%'"
+contains "C4: run-shell + abs path to z-window.sh on 'Z'" "$bz" "run-shell '$REPO_ROOT/scripts/z-window.sh"
+contains "C4: %% substitution token kept"                  "$bz" "%%"
 contains "C5: custom prompt 'jump to'"   "$bz" 'command-prompt -p "jump to"'
 
 echo "=== CASE 3: trigger the prompt path (run-shell ... z-window.sh <query>) -> window opens ==="
