@@ -10,6 +10,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/lib/resolve.sh"
 
+# Single newline, POSIX-portable (avoids the bash-only $'\n' form).
+NL='
+'
+
 # Master toggle.
 [ "$(get_tmux_option "@zoxide-sessions-auto-session" "on")" = "off" ] && exit 0
 
@@ -43,6 +47,13 @@ _norm() {
 # Resolve the name via the shared backend. Empty = no match -> nothing to do.
 resolved=$(resolve "$name") || exit 0
 [ -n "$resolved" ] || exit 0
+
+# Defence in depth: accept `resolved` ONLY if it is a single existing
+# directory; otherwise no-op (pane stays where it is).
+case "$resolved" in
+    *"$NL"*) exit 0 ;;                 # multi-line dump -> refuse to relocate
+    *)       [ -d "$resolved" ] || exit 0 ;;
+esac
 
 # Relocate: restart the pane's shell in the resolved directory.
 tmux respawn-pane -t "$pane" -c "$resolved" -k 2>/dev/null || exit 0

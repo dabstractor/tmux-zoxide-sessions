@@ -57,7 +57,7 @@
               "type": "Task",
               "id": "P1.M1.T2",
               "title": "Defence-in-depth caller guards (reject multi-line/non-directory resolved values)",
-              "status": "Ready",
+              "status": "Complete",
               "description": "Add POSIX-compliant guards to z-window.sh and z-session.sh that reject a resolved value if it contains a newline (multi-line database dump) or is not an existing directory, falling back to the current pane path / no-op. This is belt-and-braces defence so a future resolver regression cannot corrupt a window or pane.",
               "subtasks": [
                 {
@@ -80,7 +80,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T2.S2",
                   "title": "Add symmetric defence-in-depth guard to z-session.sh",
-                  "status": "Ready",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T1.S2"
@@ -105,7 +105,7 @@
                   "type": "Subtask",
                   "id": "P1.M1.T3.S1",
                   "title": "Add `-l`/`--list` regression cases to unit tests",
-                  "status": "Researching",
+                  "status": "Ready",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T1.S2"
