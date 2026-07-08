@@ -4,14 +4,14 @@
       "type": "Phase",
       "id": "P1",
       "title": "Bugfix Release v1.0.1 — zoxide flag absorption + single-quote query",
-      "status": "Ready",
+      "status": "Complete",
       "description": "Fix two issues found in adversarial QA testing of tmux-zoxide-sessions v1.0: (1) MAJOR — zoxide flag absorption where leading-dash queries (-l/--list) dump the entire frecency database into a corrupted window, caused by a regression that removed the contract-required `--` end-of-options guard; (2) MINOR — single quotes in window-jump queries break resolution due to the binding's single-quoted run-shell argument. Both fixes include defence-in-depth hardening, test fixture improvements, and regression tests.",
       "milestones": [
         {
           "type": "Milestone",
           "id": "P1.M1",
           "title": "Issue 1 — zoxide flag absorption fix (Major)",
-          "status": "Ready",
+          "status": "Complete",
           "description": "Three-layer fix for the zoxide flag absorption bug: (1) restore the `--` end-of-options guard in _resolve_zoxide, (2) add POSIX-compliant defence-in-depth guards in z-window.sh and z-session.sh that reject multi-line/non-directory resolved values, (3) harden all 6 fake-zoxide test fixtures to model real zoxide's flag parsing and add regression tests for leading-dash queries. The fixture hardening MUST precede the guard restoration because restoring `--` changes the fake zoxide's argv and would break existing tests if fixtures aren't synchronized.",
           "tasks": [
             {
@@ -98,14 +98,14 @@
               "type": "Task",
               "id": "P1.M1.T3",
               "title": "Leading-dash query regression tests",
-              "status": "Ready",
+              "status": "Complete",
               "description": "Add regression test cases that query `-l`/`--list` (and a multi-line-output token) through the resolver, the window handler, and the session handler, proving that (a) the `--` guard makes the resolver return empty for leading-dash queries, and (b) the defence-in-depth guards reject multi-line values and fall back correctly. These tests would have caught the original regression.",
               "subtasks": [
                 {
                   "type": "Subtask",
                   "id": "P1.M1.T3.S1",
                   "title": "Add `-l`/`--list` regression cases to unit tests",
-                  "status": "Ready",
+                  "status": "Complete",
                   "story_points": 1,
                   "dependencies": [
                     "P1.M1.T1.S2"

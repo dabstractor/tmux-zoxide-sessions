@@ -138,6 +138,14 @@ check "exit 0: z no-match"        "0" "$(rexit z zzz)"
 check "exit 0: auto match"        "0" "$(rexit auto proj)"
 check "exit 0: auto no-match"     "0" "$(rexit auto zzz)"
 
+# --- leading-dash regression (Issue 1): the auto/zoxide dispatchers must
+# resolve -l to empty (NOT a multi-line DB dump) because the resolver rejects
+# leading-dash queries before they ever reach zoxide. ----------------------
+check "zoxide: -l resolves empty" "" "$(rout zoxide -l)"
+check "exit 0: zoxide -l"         "0" "$(rexit zoxide -l)"
+check "auto: -l resolves empty"   "" "$(rout auto -l)"
+check "exit 0: auto -l"           "0" "$(rexit auto -l)"
+
 echo ""
 echo "RESULTS: pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]

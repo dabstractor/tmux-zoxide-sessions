@@ -64,6 +64,18 @@ check "match echoes zoxide's path"   "/home/user/projects/proj" "$(withfake proj
 check "no-match echoes empty"        ""                          "$(withfake zzz_nomatch)"
 check "missing-binary echoes empty"  ""                          "$(without proj)"
 
+# --- leading-dash regression (Issue 1: zoxide flag absorption) --------------
+# The resolver rejects leading-dash queries (case "$1" in -*) before zoxide is
+# invoked, so -l / --list resolve to empty and can never trigger list-mode.
+check "leading-dash -l resolves to empty"     ""  "$(withfake -l)"
+check "leading-dash --list resolves to empty" ""  "$(withfake --list)"
+# Document WHY leading-dash rejection is required: WITHOUT it, real zoxide (and
+# this hardened fake) enter list-mode for `query -l` and dump a MULTI-LINE DB.
+# (Direct fake invocation; the resolver is not in this path.)
+check "fake models list-mode: query -l -> multi-line dump" \
+    "$(printf '%s\n' "/home/user/projects/proj" "/home/user/projects/other1" "/home/user/projects/other2")" \
+    "$("$TBIN/zoxide" query -l)"
+
 echo ""
 echo "RESULTS: pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]
